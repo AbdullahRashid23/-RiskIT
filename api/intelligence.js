@@ -1,10 +1,8 @@
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -33,7 +31,8 @@ export default async function handler(req, res) {
       systemInstruction: { parts: [{ text: systemPrompt }] },
       generationConfig: { 
         responseMimeType: "application/json", 
-        temperature: 0.1 
+        temperature: 0.1,
+        maxOutputTokens: 2048  // Ensure enough token budget
       }
     };
 
@@ -54,11 +53,53 @@ export default async function handler(req, res) {
 
     const result = await response.json();
     
-    // Extract and parse the JSON response
-    const textContent = result.candidates[0].content.parts[0].text;
-    const parsedData = JSON.parse(textContent);
+    // Check if candidates exist
+    if (!result.candidates || result.candidates.length === 0) {
+      console.error('Empty candidates array:', result);
+      return res.status(500).json({ 
+        error: 'Model returned empty response',
+        usageMetadata: result.usageMetadata 
+      });
+    }
+
+    // Check if content exists
+    const candidate = result.candidates[0];
+    if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+      console.error('Empty content:', candidate);
+      return res.status(500).json({ 
+        error: 'Model returned empty content',
+        finishReason: candidate.finishReason 
+      });
+    }
+
+    // Extract text
+    let textContent = candidate.content.parts[0].text;
     
-    // Return the parsed data directly
+    // Remove markdown code blocks if present
+    textContent = textContent.replace(/``````\n?/g, '').trim();
+    
+    // Check if text is empty
+    if (!textContent) {
+      console.error('Empty text content');
+      return res.status(500).json({ 
+        error: 'Model returned empty text',
+        candidate: candidate 
+      });
+    }
+
+    // Parse JSON
+    let parsedData;
+    try {
+      parsedData = JSON.parse(textContent);
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      console.error('Raw text:', textContent);
+      return res.status(500).json({ 
+        error: 'Failed to parse JSON response',
+        rawText: textContent.substring(0, 500)  // First 500 chars for debugging
+      });
+    }
+    
     return res.status(200).json(parsedData);
 
   } catch (error) {
