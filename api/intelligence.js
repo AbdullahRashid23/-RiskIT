@@ -4,6 +4,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -12,28 +13,30 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const API_KEY = process.env.GEMINI_API_KEY;
-  const MODEL_ID = "gemini-2.5-flash-preview-09-2025";
-
-  if (!API_KEY) {
-    return res.status(500).json({ error: 'API key not configured' });
-  }
-
-  const { systemPrompt, userPrompt } = req.body;
-
-  if (!systemPrompt || !userPrompt) {
-    return res.status(400).json({ error: 'Missing required parameters' });
-  }
-
-  const payload = {
-    contents: [{ parts: [{ text: userPrompt }] }],
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
-  };
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${API_KEY}`;
-
   try {
+    const { systemPrompt, userPrompt } = req.body;
+
+    if (!systemPrompt || !userPrompt) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'API key not configured' });
+    }
+
+    const MODEL_ID = "gemini-2.5-flash-preview-09-2025";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
+
+    const payload = {
+      contents: [{ parts: [{ text: userPrompt }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { 
+        responseMimeType: "application/json", 
+        temperature: 0.1 
+      }
+    };
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,13 +44,28 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API Error: ${response.status}`);
+      const errorData = await response.json();
+      console.error('Gemini API Error:', errorData);
+      return res.status(response.status).json({ 
+        error: 'Gemini API error', 
+        details: errorData 
+      });
     }
 
     const result = await response.json();
-    res.status(200).json(result);
+    
+    // Extract and parse the JSON response
+    const textContent = result.candidates[0].content.parts[0].text;
+    const parsedData = JSON.parse(textContent);
+    
+    // Return the parsed data directly
+    return res.status(200).json(parsedData);
+
   } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: 'Failed to call intelligence API', details: error.message });
+    console.error('Server error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error', 
+      message: error.message 
+    });
   }
 }
