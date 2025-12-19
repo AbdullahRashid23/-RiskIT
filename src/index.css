@@ -2,65 +2,256 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #18181b;
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #27272a;
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #3f3f46;
 }
 
-/* Input field styling */
+/* Input field styles */
 .input-field {
-  @apply w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-sm text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-600 transition-all font-medium;
+  @apply w-full px-6 py-4 bg-zinc-950 border border-zinc-800 rounded-2xl text-sm text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-600 transition-all;
 }
 
-/* Compare input styling */
 .compare-input {
-  @apply w-64 h-32 bg-zinc-950 border-2 border-zinc-800 rounded-[2.5rem] text-5xl font-black uppercase tracking-tighter text-center focus:outline-none transition-all italic shadow-2xl;
+  @apply w-full max-w-xs px-8 py-6 text-center text-5xl md:text-7xl font-black italic uppercase tracking-tighter bg-zinc-950 border-2 border-zinc-800 rounded-[2.5rem] focus:outline-none focus:border-zinc-600 transition-all placeholder:text-zinc-900;
 }
 
-/* Animations */
+/* Responsive compare input for mobile */
+@media (max-width: 768px) {
+  .compare-input {
+    @apply text-3xl px-6 py-4 max-w-full;
+  }
+}
+
+/* Fix for text overflow issues */
+.text-overflow-fix {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Ensure long text doesn't break layout */
+p, span, div {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Mobile-friendly responsive fixes */
+@media (max-width: 640px) {
+  /* Scale down massive headers on mobile */
+  .text-\[14rem\], .text-\[16rem\], .text-\[20rem\] {
+    font-size: 6rem !important;
+    line-height: 1 !important;
+  }
+  
+  .text-\[12rem\] {
+    font-size: 5rem !important;
+    line-height: 1 !important;
+  }
+  
+  .text-7xl {
+    font-size: 3rem !important;
+    line-height: 1.1 !important;
+  }
+  
+  /* Reduce padding on mobile */
+  .p-24 {
+    padding: 2rem !important;
+  }
+  
+  .p-16 {
+    padding: 1.5rem !important;
+  }
+  
+  .p-12 {
+    padding: 1rem !important;
+  }
+  
+  .p-10 {
+    padding: 0.75rem !important;
+  }
+  
+  /* Reduce rounded corners on mobile */
+  .rounded-\[5rem\] {
+    border-radius: 2rem !important;
+  }
+  
+  .rounded-\[4rem\] {
+    border-radius: 1.5rem !important;
+  }
+  
+  .rounded-\[3rem\], .rounded-\[3\.5rem\], .rounded-\[2\.5rem\] {
+    border-radius: 1.25rem !important;
+  }
+  
+  /* Fix gap spacing */
+  .gap-20 {
+    gap: 1.5rem !important;
+  }
+  
+  .gap-16 {
+    gap: 1.25rem !important;
+  }
+  
+  .gap-12 {
+    gap: 1rem !important;
+  }
+  
+  .gap-10 {
+    gap: 0.75rem !important;
+  }
+}
+
+/* Tablet responsive fixes */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .text-\[14rem\], .text-\[16rem\], .text-\[20rem\] {
+    font-size: 10rem !important;
+    line-height: 1 !important;
+  }
+  
+  .text-\[12rem\] {
+    font-size: 8rem !important;
+    line-height: 1 !important;
+  }
+}
+
+/* Animation utilities */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-from-bottom-4 {
-  from { transform: translateY(1rem); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-from-top-12 {
-  from { transform: translateY(-3rem); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-3rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-from-right-8 {
-  from { transform: translateX(2rem); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(2rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes zoom-in-95 {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.animate-in { animation-duration: 0.5s; animation-fill-mode: both; }
-.fade-in { animation-name: fade-in; }
-.slide-in-from-bottom-4 { animation-name: slide-in-from-bottom-4; }
-.slide-in-from-top-12 { animation-name: slide-in-from-top-12; }
-.slide-in-from-right-8 { animation-name: slide-in-from-right-8; }
-.zoom-in-95 { animation-name: zoom-in-95; }
-.duration-700 { animation-duration: 700ms; }
-.duration-1000 { animation-duration: 1000ms; }
+.animate-in {
+  animation-duration: 700ms;
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-bottom-4 {
+  animation-name: slide-in-from-bottom-4;
+}
+
+.slide-in-from-top-12 {
+  animation-name: slide-in-from-top-12;
+}
+
+.slide-in-from-right-8 {
+  animation-name: slide-in-from-right-8;
+}
+
+.zoom-in-95 {
+  animation-name: zoom-in-95;
+}
+
+.duration-700 {
+  animation-duration: 700ms;
+}
+
+.duration-1000 {
+  animation-duration: 1000ms;
+}
+
+/* Prevent horizontal scroll */
+body, html {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Fix for very small screens */
+@media (max-width: 380px) {
+  .text-\[14rem\], .text-\[16rem\], .text-\[20rem\], .text-\[12rem\] {
+    font-size: 4rem !important;
+  }
+  
+  .text-7xl {
+    font-size: 2.5rem !important;
+  }
+  
+  .text-6xl {
+    font-size: 2rem !important;
+  }
+  
+  .text-4xl {
+    font-size: 1.75rem !important;
+  }
+}
