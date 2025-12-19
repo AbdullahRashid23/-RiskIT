@@ -124,9 +124,12 @@ async function callIntelligence(systemPrompt, userPrompt) {
         throw new Error(error.error || `HTTP Error: ${response.status}`);
       }
       
+      // The serverless function now returns parsed JSON directly
       const result = await response.json();
-      return JSON.parse(result.candidates[0].content.parts[0].text);
+      return result;
+      
     } catch (error) {
+      console.error('API Call Error:', error);
       if (i === 4) throw error;
       await new Promise(r => setTimeout(r, delay));
       delay *= 2;
