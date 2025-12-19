@@ -831,7 +831,3 @@ const EmptyState = ({ icon: Icon, title, subtitle }) => (
 
 
 
-
-i dont know how to post thsi code on github for safe deployment without any worries of api key leaks
-
-so convet this code into different files to add on github
