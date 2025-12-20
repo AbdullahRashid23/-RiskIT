@@ -3,31 +3,28 @@ import {
   LayoutDashboard, Scale, Target, Radio, 
   Menu, X, ArrowRight, Layers, RefreshCw, 
   Activity, Trophy, Search, Network, Zap,
-  TrendingUp, ShieldCheck, CheckCircle2, AlertTriangle
+  ShieldCheck, TrendingUp, BarChart3, Clock, Globe
 } from 'lucide-react';
 import './index.css';
 
-// --- SUB-COMPONENTS ---
+// --- SUB-COMPONENTS (For Clean Code) ---
 
-// 1. Dynamic Sparkline (Visualizes Data Trends)
 const Sparkline = ({ data }) => {
   const points = data.map((val, i) => `${(i / (data.length - 1)) * 100},${100 - val}`).join(" L ");
   return (
-    <div className="w-24 h-10 relative opacity-80 group-hover:opacity-100 transition-opacity">
+    <div className="w-20 h-8 relative opacity-50 group-hover:opacity-100 transition-opacity">
       <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
-        <path d={`M ${points}`} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="100" cy={100 - data[data.length - 1]} r="3" fill="#10b981" />
+        <path d={`M ${points}`} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
   );
 };
 
-// 2. Node Row (List Item)
 const NodeRow = ({ ticker, name, trend }) => (
-  <div className="group flex items-center justify-between p-4 bg-[#0c0c0e] border border-white/5 rounded-xl hover:border-emerald-500/30 transition-all cursor-pointer">
+  <div className="group flex items-center justify-between p-4 bg-[#0c0c0e] border border-zinc-800 rounded-xl hover:border-emerald-500/30 transition-all cursor-pointer">
     <div className="flex items-center gap-4">
-      <div className="w-10 h-10 rounded-lg bg-zinc-900 flex items-center justify-center font-black italic text-zinc-700 group-hover:text-emerald-500 group-hover:bg-emerald-500/10 transition-colors">
-        {ticker.substring(0, 1)}
+      <div className="w-10 h-10 rounded-lg bg-zinc-900 flex items-center justify-center font-black italic text-zinc-600 group-hover:text-emerald-500 group-hover:bg-emerald-500/10 transition-colors">
+        {ticker[0]}
       </div>
       <div>
         <h4 className="font-black italic text-lg text-zinc-300 group-hover:text-white transition-colors tracking-tight">{ticker}</h4>
@@ -38,51 +35,49 @@ const NodeRow = ({ ticker, name, trend }) => (
   </div>
 );
 
-// 3. Navigation Tab
-const NavTab = ({ icon: Icon, label, active, onClick }) => (
+const NavLink = ({ icon: Icon, label, active, onClick }) => (
   <button 
     onClick={onClick} 
-    className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all group relative ${
-      active ? 'bg-zinc-900/80 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40'
+    className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all group relative overflow-hidden ${
+      active ? 'bg-zinc-900 text-white shadow-inner' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40'
     }`}
   >
-    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-emerald-500 rounded-r-full" />}
+    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-emerald-500 rounded-r-full" />}
     <Icon size={18} className={active ? "text-emerald-500" : "group-hover:scale-110 transition-transform"} />
     <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
   </button>
 );
 
-// --- MAIN APPLICATION ---
+// --- MAIN APP ---
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('architect');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Inputs & Data State
+  // States
   const [recInputs, setRecInputs] = useState({ amount: '10000', market: 'US Tech', horizon: 'Long Term', halal: true });
   const [compInputs, setCompInputs] = useState({ s1: '', s2: '' });
   const [anaInput, setAnaInput] = useState('');
   
-  // Results State
   const [recommendations, setRecommendations] = useState(null);
   const [comparison, setComparison] = useState(null);
   const [analysis, setAnalysis] = useState(null);
 
-  // --- LOGIC SIMULATION ---
+  // --- LOGIC HANDLERS ---
   const handleArchitect = () => {
     setLoading(true);
     setTimeout(() => {
       setRecommendations({
         strategy: "Halal-Compliant US Tech Growth. Focuses on large-cap technology companies with strong competitive moats.",
         nodes: [
-          { ticker: 'MSFT', name: 'Microsoft Corp', trend: [30, 40, 35, 50, 60, 55, 70] },
-          { ticker: 'AVGO', name: 'Broadcom Inc', trend: [20, 25, 20, 40, 35, 60, 75] },
-          { ticker: 'ADBE', name: 'Adobe Systems', trend: [40, 35, 50, 45, 60, 70, 80] }
+          { ticker: 'MSFT', name: 'Microsoft Corp', trend: [30, 45, 40, 60, 55, 75, 80] },
+          { ticker: 'AVGO', name: 'Broadcom Inc', trend: [20, 25, 30, 45, 40, 60, 70] },
+          { ticker: 'ADBE', name: 'Adobe Systems', trend: [40, 35, 50, 45, 60, 65, 80] }
         ]
       });
       setLoading(false);
-    }, 1500);
+    }, 1200);
   };
 
   const handleComparator = () => {
@@ -100,7 +95,7 @@ export default function App() {
         ]
       });
       setLoading(false);
-    }, 1500);
+    }, 1200);
   };
 
   const handlePathfinder = () => {
@@ -116,14 +111,14 @@ export default function App() {
         long: "Structural Hold"
       });
       setLoading(false);
-    }, 1500);
+    }, 1200);
   };
 
   return (
     <div className="flex h-screen overflow-hidden selection:bg-emerald-500/30 selection:text-white">
       
-      {/* SIDEBAR NAVIGATION */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#050505] border-r border-white/5 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* SIDEBAR */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#020202] border-r border-white/5 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <div className="flex items-center gap-3 mb-10 pl-2">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-black font-black italic shadow-[0_0_20px_rgba(255,255,255,0.2)]">!</div>
@@ -131,21 +126,21 @@ export default function App() {
           </div>
           
           <nav className="space-y-2">
-            <NavTab icon={LayoutDashboard} label="Architect" active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setIsSidebarOpen(false)}} />
-            <NavTab icon={Scale} label="Comparator" active={activeTab === 'comparator'} onClick={() => {setActiveTab('comparator'); setIsSidebarOpen(false)}} />
-            <NavTab icon={Target} label="Pathfinder" active={activeTab === 'pathfinder'} onClick={() => {setActiveTab('pathfinder'); setIsSidebarOpen(false)}} />
-            <NavTab icon={Radio} label="Pulse" active={activeTab === 'pulse'} onClick={() => {setActiveTab('pulse'); setIsSidebarOpen(false)}} />
+            <NavLink icon={LayoutDashboard} label="Architect" active={activeTab === 'architect'} onClick={() => {setActiveTab('architect'); setIsSidebarOpen(false)}} />
+            <NavLink icon={Scale} label="Comparator" active={activeTab === 'comparator'} onClick={() => {setActiveTab('comparator'); setIsSidebarOpen(false)}} />
+            <NavLink icon={Target} label="Pathfinder" active={activeTab === 'pathfinder'} onClick={() => {setActiveTab('pathfinder'); setIsSidebarOpen(false)}} />
+            <NavLink icon={Radio} label="Pulse" active={activeTab === 'pulse'} onClick={() => {setActiveTab('pulse'); setIsSidebarOpen(false)}} />
           </nav>
         </div>
 
-        {/* --- CREDITS FOOTER (YOUR TEAM) --- */}
-        <div className="mt-auto p-6 border-t border-white/5 bg-[#030303]">
-          <div className="mb-6">
-             <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-3">System Engineering</p>
+        {/* --- ENGINEERING CREDITS --- */}
+        <div className="mt-auto p-6 border-t border-white/5 bg-[#050505]">
+          <div className="mb-6 opacity-60 hover:opacity-100 transition-opacity">
+             <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Engineering Team</p>
              <div className="space-y-1.5 font-mono text-[10px] text-zinc-400">
-               <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-600 rounded-full"/> Abdullah Rashid</div>
-               <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-600 rounded-full"/> Moawiz</div>
-               <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-600 rounded-full"/> Muhammad Abdullah</div>
+               <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-700 rounded-full"/> Abdullah Rashid</div>
+               <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-700 rounded-full"/> Moawiz</div>
+               <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-700 rounded-full"/> Muhammad Abdullah</div>
              </div>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 rounded-lg border border-white/5">
@@ -155,43 +150,44 @@ export default function App() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col h-full relative bg-[#030304]">
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col h-full relative bg-[#020202]">
+        
         {/* Mobile Header */}
-        <header className="lg:hidden h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#030304]/80 backdrop-blur-md z-40 sticky top-0">
+        <header className="lg:hidden h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#020202]/90 backdrop-blur-md z-40 sticky top-0">
           <div className="flex items-center gap-3">
-             <button onClick={() => setIsSidebarOpen(true)} className="text-zinc-400"><Menu size={20}/></button>
+             <button onClick={() => setIsSidebarOpen(true)} className="text-zinc-400 hover:text-white"><Menu size={20}/></button>
              <span className="text-[10px] font-black tracking-[0.3em] uppercase text-zinc-500">{activeTab}</span>
           </div>
           {loading && <RefreshCw size={16} className="text-emerald-500 animate-spin" />}
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-8">
           
-          {/* =======================
-              DASHBOARD MODE
-             ======================= */}
-          {activeTab === 'dashboard' && (
-            <div className="dashboard-grid animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {/* =======================================================
+              1. ARCHITECT MODE
+             ======================================================= */}
+          {activeTab === 'architect' && (
+            <div className="bento-grid animate-in fade-in slide-in-from-bottom-4 duration-700">
               
               {/* INPUT CARD */}
               <div className="glass-card">
                 <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none rotate-12"><Layers size={180}/></div>
-                <h2 className="display-text mb-8 relative z-10">ARCHITECT</h2>
+                <h2 className="title-fluid mb-8 relative z-10">ARCHITECT</h2>
                 
                 <div className="space-y-6 relative z-10">
                   <div>
-                    <label className="label-text">Investment Capacity</label>
-                    <input type="number" className="input-surface" value={recInputs.amount} onChange={e => setRecInputs({...recInputs, amount: e.target.value})} />
+                    <label className="field-label flex items-center gap-2"><TrendingUp size={12}/> Investment Capacity</label>
+                    <input type="number" className="field-input" value={recInputs.amount} onChange={e => setRecInputs({...recInputs, amount: e.target.value})} />
                   </div>
                   <div>
-                    <label className="label-text">Node Universe</label>
-                    <input type="text" className="input-surface" value={recInputs.market} onChange={e => setRecInputs({...recInputs, market: e.target.value})} />
+                    <label className="field-label flex items-center gap-2"><Globe size={12}/> Node Universe</label>
+                    <input type="text" className="field-input" value={recInputs.market} onChange={e => setRecInputs({...recInputs, market: e.target.value})} />
                   </div>
                   <div>
-                    <label className="label-text">Time Horizon</label>
+                    <label className="field-label flex items-center gap-2"><Clock size={12}/> Time Horizon</label>
                     <div className="relative">
-                       <select className="input-surface appearance-none cursor-pointer" value={recInputs.horizon} onChange={e => setRecInputs({...recInputs, horizon: e.target.value})}>
+                       <select className="field-input cursor-pointer" value={recInputs.horizon} onChange={e => setRecInputs({...recInputs, horizon: e.target.value})}>
                          <option>Short Term</option>
                          <option>Medium Term</option>
                          <option>Long Term</option>
@@ -201,7 +197,7 @@ export default function App() {
                   </div>
                   
                   {/* Halal Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-zinc-950/50 border border-white/5 rounded-xl cursor-pointer hover:border-zinc-700 transition-colors" onClick={() => setRecInputs({...recInputs, halal: !recInputs.halal})}>
+                  <div className="flex items-center justify-between p-4 bg-[#050505] border border-zinc-800 rounded-xl cursor-pointer hover:border-zinc-700 transition-colors group" onClick={() => setRecInputs({...recInputs, halal: !recInputs.halal})}>
                      <div>
                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Ethical Gate</label>
                        <div className="flex items-center gap-2">
@@ -216,7 +212,7 @@ export default function App() {
                 </div>
 
                 <div className="mt-12">
-                   <button onClick={handleArchitect} disabled={loading} className="btn-action group">
+                   <button onClick={handleArchitect} disabled={loading} className="btn-primary group">
                      <span>{loading ? 'Synthesizing...' : 'Initialize Nodes'}</span>
                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform"/>
                    </button>
@@ -224,13 +220,13 @@ export default function App() {
               </div>
 
               {/* OUTPUT CARD */}
-              <div className="glass-card bg-zinc-950/80">
+              <div className="glass-card bg-[#050505]/60">
                 <div className="flex justify-between items-start mb-6">
-                  <span className="badge text-blue-400 border-blue-500/20 bg-blue-500/5">Strategy Inferred</span>
+                  <span className="badge-glass text-blue-400 border-blue-500/20 bg-blue-500/5">Strategy Inferred</span>
                   {recommendations && <span className="text-[9px] font-mono text-emerald-500 uppercase animate-pulse">Live Feed</span>}
                 </div>
                 
-                <p className="text-lg text-zinc-300 font-medium italic leading-relaxed mb-8">
+                <p className="text-lg text-zinc-300 font-medium italic leading-relaxed mb-8 min-h-[80px]">
                   "{recommendations ? recommendations.strategy : "System Standby. Awaiting architecture parameters to synthesize financial node path..."}"
                 </p>
 
@@ -239,8 +235,8 @@ export default function App() {
                     {recommendations.nodes.map((node, i) => <NodeRow key={i} {...node} />)}
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl opacity-20">
-                     <Layers size={48} className="mb-4 text-zinc-500"/>
+                  <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl opacity-30">
+                     <BarChart3 size={48} className="mb-4 text-zinc-500"/>
                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No Nodes Selected</p>
                   </div>
                 )}
@@ -252,23 +248,17 @@ export default function App() {
               </div>
 
               {/* STABILITY CARD */}
-              <div className="glass-card border-emerald-500/10 relative">
+              <div className="glass-card border-emerald-500/10 relative overflow-hidden">
                  <div className="flex justify-between items-start z-10 relative">
-                   <span className="label-text text-emerald-500 ml-0">Logic Stability</span>
+                   <span className="field-label text-emerald-500 ml-0">Logic Stability</span>
                    <RefreshCw size={16} className={`text-emerald-500 ${loading ? 'animate-spin' : ''}`} />
                  </div>
                  
                  <div className="flex-1 flex items-center relative z-10">
-                    <h2 className={`display-text w-full transition-all duration-700 ${recommendations ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 scale-100' : 'text-zinc-800 scale-95 blur-sm'}`}>
+                    <h2 className={`title-fluid w-full transition-all duration-700 ${recommendations ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 scale-100' : 'text-zinc-800 scale-95 blur-sm'}`}>
                       {recommendations ? "RESILIENT" : "IDLE"}
                     </h2>
                  </div>
-
-                 {recommendations && (
-                    <div className="absolute right-[-20%] bottom-[-20%] pointer-events-none opacity-10">
-                       <Activity size={300} className="text-emerald-500" />
-                    </div>
-                 )}
 
                  <div className="mt-auto flex items-center gap-3 z-10 relative">
                     <div className={`w-2 h-2 rounded-full ${recommendations ? 'bg-emerald-500 animate-pulse shadow-[0_0_12px_#10b981]' : 'bg-zinc-800'}`} />
@@ -278,23 +268,23 @@ export default function App() {
             </div>
           )}
 
-          {/* =======================
-              COMPARATOR MODE
-             ======================= */}
+          {/* =======================================================
+              2. COMPARATOR MODE
+             ======================================================= */}
           {activeTab === 'comparator' && (
-            <div className="dashboard-grid animate-in zoom-in-95 duration-500">
-               {/* HEADER */}
+            <div className="bento-grid animate-in zoom-in-95 duration-500">
+               {/* Header Banner */}
                <div className="md:col-span-2 glass-card items-center text-center py-12 min-h-[250px] justify-center">
-                  <h2 className="display-text mb-4 text-[4rem]">COMPARATOR</h2>
+                  <h2 className="title-fluid mb-4 text-[4rem]">COMPARATOR</h2>
                   <p className="text-zinc-500 italic font-medium max-w-lg">
                     Head-to-head logical elimination protocol. Input two distinct node identifiers to determine dominance.
                   </p>
                </div>
 
-               {/* INPUTS (Split View) */}
+               {/* Inputs */}
                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="glass-card py-10">
-                     <label className="label-text text-center w-full">Node Alpha</label>
+                     <label className="field-label text-center w-full">Node Alpha</label>
                      <input 
                        className="w-full bg-transparent border-b border-zinc-800 py-4 text-center text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors" 
                        placeholder="TICKER A" 
@@ -303,7 +293,7 @@ export default function App() {
                      />
                   </div>
                   <div className="glass-card py-10">
-                     <label className="label-text text-center w-full">Node Beta</label>
+                     <label className="field-label text-center w-full">Node Beta</label>
                      <input 
                        className="w-full bg-transparent border-b border-zinc-800 py-4 text-center text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors" 
                        placeholder="TICKER B" 
@@ -312,24 +302,24 @@ export default function App() {
                      />
                   </div>
                </div>
-
+               
                <div className="md:col-span-2">
-                 <button onClick={handleComparator} disabled={loading} className="btn-action justify-center py-6 text-sm">
+                 <button onClick={handleComparator} disabled={loading} className="btn-primary justify-center py-6 text-sm">
                    {loading ? 'Auditing Nodes...' : 'Resolve Logic Conflict'}
                  </button>
                </div>
 
                {comparison && (
                  <>
-                   {/* WINNER CARD - High Contrast */}
-                   <div className="glass-card bg-zinc-100 border-white text-black relative overflow-hidden">
+                   {/* WINNER CARD - High Contrast (Inverted) */}
+                   <div className="glass-card bg-white border-white text-black relative overflow-hidden">
                       <div className="absolute -top-10 -right-10 opacity-10 rotate-[-12deg] pointer-events-none"><Trophy size={250} /></div>
                       <div className="relative z-10">
                          <div className="flex items-center gap-3 mb-10">
                             <Trophy size={20} className="text-yellow-600"/>
                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900">Dominant Node</span>
                          </div>
-                         <h2 className="text-[8rem] leading-[0.8] font-black italic uppercase tracking-tighter mb-6 text-black">
+                         <h2 className="text-[6rem] md:text-[8rem] leading-[0.8] font-black italic uppercase tracking-tighter mb-6 text-black">
                            {comparison.winner}
                          </h2>
                          <div className="inline-block px-4 py-2 bg-black/5 border border-black/10 rounded-lg">
@@ -341,7 +331,7 @@ export default function App() {
 
                    {/* SCORECARD */}
                    <div className="glass-card">
-                      <h3 className="label-text mb-8">Logic Scorecard</h3>
+                      <h3 className="field-label mb-8">Logic Scorecard</h3>
                       <div className="space-y-6">
                         {comparison.scorecard.map((s, i) => (
                           <div key={i} className="space-y-2">
@@ -367,11 +357,11 @@ export default function App() {
             </div>
           )}
 
-          {/* =======================
-              PATHFINDER MODE
-             ======================= */}
+          {/* =======================================================
+              3. PATHFINDER MODE
+             ======================================================= */}
           {activeTab === 'pathfinder' && (
-            <div className="dashboard-grid animate-in fade-in slide-in-from-right-8 duration-500">
+            <div className="bento-grid animate-in fade-in slide-in-from-right-8 duration-500">
                <div className="md:col-span-2 glass-card min-h-0 flex-row items-center gap-6 p-6 border-emerald-500/20 shadow-[0_0_30px_-10px_rgba(16,185,129,0.15)]">
                   <Search className="text-zinc-500 ml-2" size={24} />
                   <input 
@@ -389,11 +379,11 @@ export default function App() {
                  <div className="md:col-span-2 glass-card">
                     <div className="flex flex-col md:flex-row justify-between items-start mb-10 gap-8">
                        <div>
-                          <h2 className="display-text text-white">{analysis.ticker}</h2>
-                          <p className="label-text text-lg mt-4 text-zinc-400">{analysis.name}</p>
+                          <h2 className="title-fluid text-white">{analysis.ticker}</h2>
+                          <p className="field-label text-lg mt-4 text-zinc-400">{analysis.name}</p>
                        </div>
                        <div className="text-right p-6 bg-[#0c0c0e] rounded-2xl border border-white/5">
-                          <p className="label-text mb-2">Node Health</p>
+                          <p className="field-label mb-2">Node Health</p>
                           <div className="text-5xl font-black text-emerald-500 shadow-emerald-500/20 drop-shadow-md">
                              {(analysis.health * 100).toFixed(0)}%
                           </div>
@@ -407,11 +397,11 @@ export default function App() {
                        </div>
                        <div className="space-y-4">
                           <div className="p-6 bg-[#0c0c0e] border border-white/5 rounded-xl flex justify-between items-center">
-                             <span className="label-text mb-0">Short Term Path</span>
+                             <span className="field-label mb-0">Short Term Path</span>
                              <span className="text-emerald-400 font-bold italic text-sm">{analysis.short}</span>
                           </div>
                           <div className="p-6 bg-[#0c0c0e] border border-white/5 rounded-xl flex justify-between items-center">
-                             <span className="label-text mb-0">Long Term Path</span>
+                             <span className="field-label mb-0">Long Term Path</span>
                              <span className="text-blue-400 font-bold italic text-sm">{analysis.long}</span>
                           </div>
                        </div>
@@ -420,28 +410,28 @@ export default function App() {
                ) : (
                  <div className="md:col-span-2 h-[400px] flex flex-col items-center justify-center opacity-30 border border-dashed border-zinc-700 rounded-[2rem]">
                     <Target size={64} className="mb-4 text-zinc-600" />
-                    <p className="display-text text-[3rem] text-zinc-700">Awaiting Vector</p>
+                    <p className="title-fluid text-[3rem] text-zinc-700">Awaiting Vector</p>
                  </div>
                )}
             </div>
           )}
 
-          {/* =======================
-              PULSE MODE
-             ======================= */}
+          {/* =======================================================
+              4. PULSE MODE
+             ======================================================= */}
           {activeTab === 'pulse' && (
              <div className="max-w-4xl mx-auto p-4 space-y-4 animate-in fade-in">
-                <h2 className="display-text text-center mb-10 text-[4rem]">LOGIC PULSE</h2>
+                <h2 className="title-fluid text-center mb-10 text-[4rem]">LOGIC PULSE</h2>
                 {[1, 2, 3, 4].map((i) => (
                    <div key={i} className="group glass-card min-h-0 flex-row items-center justify-between p-6 hover:bg-zinc-900/80 cursor-pointer border-l-4 border-l-emerald-500">
                       <div className="flex items-center gap-6">
                          <span className="font-mono text-zinc-600 text-xs">10:4{i} AM</span>
                          <div>
                             <h4 className="font-bold text-zinc-300 group-hover:text-white transition-colors">Global Semiconductor Logic Gate Adjusted</h4>
-                            <p className="label-text mt-1 text-zinc-500">Impact: Moderate // Sector: Tech</p>
+                            <p className="field-label mt-1 text-zinc-500">Impact: Moderate // Sector: Tech</p>
                          </div>
                       </div>
-                      <div className="badge bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Stable</div>
+                      <div className="badge-glass bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Stable</div>
                    </div>
                 ))}
              </div>
