@@ -37,8 +37,9 @@ async function callIntelligence(systemPrompt, userPrompt) {
     throw new Error(`Intelligence API failed with ${res.status}`);
   }
 
+  // intelligence.js already returns parsed JSON from Gemini
   const data = await res.json();
-  return data.text; // expected { text: "..." }
+  return data; // <- direct JSON, no .text, no JSON.parse
 }
 
 // =====================
@@ -180,20 +181,8 @@ Time horizon: ${recInputs.horizon}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const raw = await callIntelligence(systemPrompt, userPrompt);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        const first = raw.indexOf('{');
-        const last = raw.lastIndexOf('}');
-        if (first !== -1 && last !== -1) {
-          parsed = JSON.parse(raw.slice(first, last + 1));
-        } else {
-          throw new Error('JSON parse failed');
-        }
-      }
+      // direct JSON from backend
+      const parsed = await callIntelligence(systemPrompt, userPrompt);
 
       if (!parsed.nodes || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
         throw new Error('Invalid architect payload');
@@ -217,7 +206,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       });
     } catch (e) {
       console.error('Architect error', e);
-      // On error: show standby state instead of any fixed stocks
+      // On error: keep standby state (no forced static stocks)
       setRecommendations(null);
     } finally {
       setLoading(false);
@@ -267,20 +256,7 @@ Market universe: ${recInputs.market}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const raw = await callIntelligence(systemPrompt, userPrompt);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        const first = raw.indexOf('{');
-        const last = raw.lastIndexOf('}');
-        if (first !== -1 && last !== -1) {
-          parsed = JSON.parse(raw.slice(first, last + 1));
-        } else {
-          throw new Error('JSON parse failed');
-        }
-      }
+      const parsed = await callIntelligence(systemPrompt, userPrompt);
 
       const scorecard = Array.isArray(parsed.scorecard)
         ? parsed.scorecard.map((row) => ({
@@ -355,20 +331,7 @@ Time horizon: ${recInputs.horizon}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const raw = await callIntelligence(systemPrompt, userPrompt);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        const first = raw.indexOf('{');
-        const last = raw.lastIndexOf('}');
-        if (first !== -1 && last !== -1) {
-          parsed = JSON.parse(raw.slice(first, last + 1));
-        } else {
-          throw new Error('JSON parse failed');
-        }
-      }
+      const parsed = await callIntelligence(systemPrompt, userPrompt);
 
       const health =
         typeof parsed.health === 'number'
@@ -394,7 +357,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
   };
 
   // =====================
-  // RENDER (same UI)
+  // RENDER (UI unchanged)
   // =====================
 
   return (
@@ -800,7 +763,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
                       <Trophy className="w-40 h-40 sm:w-56 sm:h-56 md:w-64 md:h-64" />
                     </div>
                     <div className="relative z-10">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-6 sm:mb-10">
+                      <div className="flex items-centered gap-2 sm:gap-3 mb-6 sm:mb-10">
                         <Trophy size={18} className="text-yellow-600" />
                         <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-900">
                           Dominant Node
