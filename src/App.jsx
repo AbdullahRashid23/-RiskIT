@@ -18,7 +18,7 @@ import {
   ShieldCheck,
   Clock,
   Globe,
-  BarChart3
+  BarChart3,
 } from 'lucide-react';
 import './index.css';
 
@@ -26,20 +26,19 @@ import './index.css';
 // INTELLIGENCE HELPER
 // =====================
 
-async function callIntelligence(systemPrompt, userPrompt) {
+async function callIntelligence(systemPrompt, userPrompt, extra = {}) {
   const res = await fetch('/api/intelligence', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ systemPrompt, userPrompt }),
+    body: JSON.stringify({ systemPrompt, userPrompt, ...extra }),
   });
 
   if (!res.ok) {
     throw new Error(`Intelligence API failed with ${res.status}`);
   }
 
-  // intelligence.js already returns parsed JSON from Gemini
   const data = await res.json();
-  return data; // <- direct JSON, no .text, no JSON.parse
+  return data;
 }
 
 // =====================
@@ -147,14 +146,18 @@ export default function App() {
       const systemPrompt = `
 You are RISKIT ARCHITECT, a discrete-math financial node selector.
 
+You are given REAL_MARKET_DATA_JSON which contains real quotes, profiles,
+and discrete metrics (trendScore, volatilityScore, trend[0-100]) for a
+candidate universe of tickers. You MUST base all node choices on that JSON.
+
 Your task:
 1) Given an investment amount, market universe, time horizon, and halal filter,
-   choose EXACTLY 3 liquid stocks from that market.
+   choose EXACTLY 3 liquid stocks from that candidate universe.
 2) Use simple discrete logic:
-   - estimate momentum from recent price changes,
-   - penalize high volatility (frequent sign changes in returns),
-   - prefer higher liquidity.
-3) Output ONLY valid JSON with this exact shape (EXAMPLE – use real tickers):
+   - estimate momentum from the provided normalized trend,
+   - penalize high volatility (frequent sign changes / high volatilityScore),
+   - prefer higher liquidity (proxied by stable prices and large exchanges).
+3) Output ONLY valid JSON with this exact shape:
 
 {
   "strategy": "short natural language description",
@@ -167,10 +170,11 @@ Your task:
 
 Rules:
 - "trend" must be exactly 7 INTEGER values between 0 and 100 representing
-  relative price over the last 7 observations.
-- Use REAL, actively traded stocks for the specified market.
-- If halal filter is ON, avoid obviously non-halal sectors (conventional banks,
-  alcohol, gambling, etc.).
+  relative price over the last 7 observations (use the 'trend' arrays from
+  REAL_MARKET_DATA_JSON when possible).
+- Use ONLY tickers that exist in REAL_MARKET_DATA_JSON.
+- If halal filter is ON, avoid obviously non-halal sectors (banks, alcohol,
+  gambling, etc.) using the "sector" / "finnhubIndustry" style information.
 - Do NOT include any explanation text outside of that JSON.
 `;
 
@@ -181,8 +185,17 @@ Time horizon: ${recInputs.horizon}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      // direct JSON from backend
-      const parsed = await callIntelligence(systemPrompt, userPrompt);
+      // choose a fixed candidate universe; backend will fetch real data
+      const universeTickers =
+        recInputs.market.toLowerCase().includes('us')
+          ? ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AVGO']
+          : ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AVGO'];
+
+      const parsed = await callIntelligence(systemPrompt, userPrompt, {
+        mode: 'architect',
+        tickers: universeTickers,
+        market: recInputs.market,
+      });
 
       if (!parsed.nodes || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
         throw new Error('Invalid architect payload');
@@ -206,7 +219,6 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       });
     } catch (e) {
       console.error('Architect error', e);
-      // On error: keep standby state (no forced static stocks)
       setRecommendations(null);
     } finally {
       setLoading(false);
@@ -227,10 +239,18 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       const systemPrompt = `
 You are RISKIT COMPARATOR, comparing two stock tickers as logical nodes.
 
+You are given NODE_ALPHA_REAL and NODE_BETA_REAL JSON, each containing
+real quotes, profile information, and discrete metrics:
+- trendScore (0-100, higher is stronger recent momentum),
+- volatilityScore (0-100, higher means more sign changes / volatility),
+- trend (array of 0-100 points).
+
 You MUST:
-- Use financial reasoning (valuation, growth, volatility, halal compliance)
+- Use these JSON metrics for valuation/growth/trend/volatility reasoning.
+- Respect halal filter using sector/industry fields.
 - Decide ONE winner.
-- Output ONLY JSON with this exact shape:
+
+Output ONLY JSON with this exact shape:
 
 {
   "winner": "TICKER",
@@ -246,6 +266,7 @@ You MUST:
 Rules:
 - "s1" refers to Node Alpha (${s1}), "s2" to Node Beta (${s2}).
 - Score range is 0 to 100 (integers).
+- Use NODE_ALPHA_REAL and NODE_BETA_REAL data; do NOT invent numbers.
 - Do NOT add any explanation outside the JSON.
 `;
 
@@ -256,7 +277,11 @@ Market universe: ${recInputs.market}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const parsed = await callIntelligence(systemPrompt, userPrompt);
+      const parsed = await callIntelligence(systemPrompt, userPrompt, {
+        mode: 'comparator',
+        tickers: [s1, s2],
+        market: recInputs.market,
+      });
 
       const scorecard = Array.isArray(parsed.scorecard)
         ? parsed.scorecard.map((row) => ({
@@ -306,7 +331,11 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       const systemPrompt = `
 You are RISKIT PATHFINDER, analysing ONE stock node in a risk graph.
 
-Output ONLY JSON with this exact shape:
+You are given NODE_REAL JSON with:
+- real quote and profile fields,
+- trendScore, volatilityScore, and trend[0-100] discrete metrics.
+
+Output ONLY JSON with this shape:
 
 {
   "ticker": "T",
@@ -318,9 +347,10 @@ Output ONLY JSON with this exact shape:
 }
 
 Rules:
-- "health" is a number between 0 and 1 representing structural stability:
-  combine trend, volatility, and risk in a simple scoring.
+- "health" is 0 to 1, combining trendScore (positive), volatilityScore
+  (negative), and any risk hints from profile/sector.
 - Make the description concrete and focused on risk/structure, not generic.
+- Use NODE_REAL metrics, do not invent numbers.
 - No extra text outside this JSON.
 `;
 
@@ -331,7 +361,11 @@ Time horizon: ${recInputs.horizon}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const parsed = await callIntelligence(systemPrompt, userPrompt);
+      const parsed = await callIntelligence(systemPrompt, userPrompt, {
+        mode: 'pathfinder',
+        tickers: [ticker],
+        market: recInputs.market,
+      });
 
       const health =
         typeof parsed.health === 'number'
@@ -704,9 +738,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
           {activeTab === 'comparator' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 animate-in zoom-in-95 duration-500">
               <div className="md:col-span-2 glass-card items-center text-center py-8 sm:py-10 md:py-12 min-h-[220px] md:min-h-[250px] justify-center">
-                <h2 className="title-fluid mb-3 sm:mb-4">
-                  COMPARATOR
-                </h2>
+                <h2 className="title-fluid mb-3 sm:mb-4">COMPARATOR</h2>
                 <p className="text-zinc-500 italic font-medium max-w-xl mx-auto text-xs sm:text-sm">
                   Head-to-head logical elimination protocol. Input two distinct
                   node identifiers to determine dominance.
@@ -734,7 +766,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
                   Node Beta
                 </label>
                 <input
-                  className="w-full bg-transparent border-b border-zinc-800 py-3 sm:py-4 text-center text-2xl sm:text-3xl md:text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-transparent border-b border-zinc-800 py-3 sm:py-4 text-center text-2xl sm:3xl md:text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors"
                   placeholder="TICKER B"
                   value={compInputs.s2}
                   onChange={(e) =>
@@ -895,9 +927,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
               ) : (
                 <div className="md:col-span-2 h-[260px] sm:h-[320px] md:h-[400px] flex flex-col items-center justify-center opacity-30 border border-dashed border-zinc-700 rounded-[1.5rem] sm:rounded-[2rem] px-4 text-center">
                   <Target size={52} className="mb-3 sm:mb-4 text-zinc-600" />
-                  <p className="title-fluid text-zinc-700">
-                    Awaiting Vector
-                  </p>
+                  <p className="title-fluid text-zinc-700">Awaiting Vector</p>
                 </div>
               )}
             </div>
