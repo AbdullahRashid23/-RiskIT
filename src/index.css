@@ -3,292 +3,108 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-dark: #050505;
+    --card-bg: #09090b;
+    --border-subtle: #1c1c1f;
+    --border-active: #27272a;
+    --accent-zinc: #f4f4f5;
+    --text-muted: #71717a;
+  }
+
   * {
-    border-color: hsl(var(--border));
+    border-color: var(--border-subtle);
+    box-sizing: border-box;
   }
   
   body {
-    background-color: #050505;
-    color: #f4f4f5;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--accent-zinc);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    /* Prevents horizontal "wobble" on mobile */
+    overflow-x: hidden; 
+    width: 100%;
   }
 }
 
-/* Custom scrollbar */
+@layer components {
+  /* Fluid Layout Container */
+  .dashboard-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem;
+    max-width: 1600px;
+    margin: 0 auto;
+    /* Modern Container Query setup */
+    container-type: inline-size;
+  }
+
+  /* Responsive Grid Logic without Media Queries where possible */
+  .main-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  /* The "Glass" Card */
+  .glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 2rem;
+    padding: clamp(1.5rem, 4cqw, 2.5rem);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), border-color 0.3s;
+    overflow: hidden;
+  }
+
+  .glass-card:hover {
+    border-color: var(--border-active);
+  }
+
+  /* Inputs: Better Touch Targets */
+  .input-field {
+    @apply w-full bg-black/40 border border-[#27272a] rounded-xl px-5 py-4 text-base 
+           transition-all duration-300 focus:ring-2 focus:ring-zinc-800 focus:border-zinc-500
+           outline-none placeholder:text-zinc-700;
+  }
+}
+
+/* FLUID TYPOGRAPHY 
+   Scales perfectly from 320px to 1920px 
+*/
+.text-fluid-huge {
+  font-size: clamp(3rem, 15vw, 12rem);
+  line-height: 0.85;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.text-fluid-strategy {
+  font-size: clamp(1.1rem, 2.5vw, 1.75rem);
+  line-height: 1.4;
+  font-weight: 500;
+  color: #d4d4d8;
+}
+
+/* Side Navigation: Responsive behavior */
+.side-nav {
+  @apply fixed bottom-0 left-0 w-full h-16 bg-black/80 backdrop-blur-xl border-t border-zinc-900 z-50
+         lg:relative lg:h-screen lg:w-72 lg:border-t-0 lg:border-r lg:bg-transparent;
+}
+
+/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
 }
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #27272a;
-  border-radius: 4px;
+  border-radius: 10px;
 }
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
-}
-
-/* Input field styles */
-.input-field {
-  width: 100%;
-  padding: 1rem 1.5rem;
-  background-color: #09090b;
-  border: 1px solid #27272a;
-  border-radius: 1rem;
-  font-size: 0.875rem;
-  color: #f4f4f5;
-  transition: all 0.3s;
-}
-
-.input-field::placeholder {
-  color: #3f3f46;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: #52525b;
-}
-
-.compare-input {
-  width: 100%;
-  max-width: 24rem;
-  padding: 1.5rem 2rem;
-  text-align: center;
-  font-size: clamp(2rem, 6vw, 4.5rem);
-  font-weight: 900;
-  font-style: italic;
-  text-transform: uppercase;
-  letter-spacing: -0.05em;
-  background-color: #09090b;
-  border: 2px solid #27272a;
-  border-radius: 2.5rem;
-  transition: all 0.3s;
-}
-
-.compare-input::placeholder {
-  color: #18181b;
-}
-
-.compare-input:focus {
-  outline: none;
-  border-color: #52525b;
-}
-
-/* Prevent horizontal scroll */
-body, html {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
-
-/* Fix for text overflow issues */
-p, span, div, h1, h2, h3, h4, h5, h6 {
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
-}
-
-/* Responsive text utilities using clamp */
-.text-huge-responsive {
-  font-size: clamp(4rem, 12vw, 20rem) !important;
-  line-height: 1 !important;
-}
-
-.text-big-responsive {
-  font-size: clamp(3rem, 10vw, 16rem) !important;
-  line-height: 1 !important;
-}
-
-.text-large-responsive {
-  font-size: clamp(2.5rem, 8vw, 12rem) !important;
-  line-height: 1 !important;
-}
-
-.text-title-responsive {
-  font-size: clamp(2rem, 6vw, 7rem) !important;
-  line-height: 1.1 !important;
-}
-
-.text-heading-responsive {
-  font-size: clamp(1.5rem, 4vw, 4rem) !important;
-  line-height: 1.2 !important;
-}
-
-.text-subheading-responsive {
-  font-size: clamp(1.25rem, 3vw, 2.5rem) !important;
-  line-height: 1.3 !important;
-}
-
-/* Responsive padding utilities */
-.p-responsive-xl {
-  padding: clamp(1rem, 3vw, 6rem) !important;
-}
-
-.p-responsive-lg {
-  padding: clamp(0.75rem, 2.5vw, 4rem) !important;
-}
-
-.p-responsive-md {
-  padding: clamp(0.5rem, 2vw, 2.5rem) !important;
-}
-
-.px-responsive-xl {
-  padding-left: clamp(1rem, 3vw, 6rem) !important;
-  padding-right: clamp(1rem, 3vw, 6rem) !important;
-}
-
-.py-responsive-xl {
-  padding-top: clamp(1rem, 3vw, 6rem) !important;
-  padding-bottom: clamp(1rem, 3vw, 6rem) !important;
-}
-
-/* Responsive gap utilities */
-.gap-responsive-xl {
-  gap: clamp(1rem, 3vw, 5rem) !important;
-}
-
-.gap-responsive-lg {
-  gap: clamp(0.75rem, 2vw, 3rem) !important;
-}
-
-.gap-responsive-md {
-  gap: clamp(0.5rem, 1.5vw, 2rem) !important;
-}
-
-/* Responsive rounded corners */
-.rounded-responsive-xl {
-  border-radius: clamp(1.5rem, 4vw, 5rem) !important;
-}
-
-.rounded-responsive-lg {
-  border-radius: clamp(1.25rem, 3vw, 4rem) !important;
-}
-
-.rounded-responsive-md {
-  border-radius: clamp(1rem, 2vw, 2.5rem) !important;
-}
-
-/* Mobile-specific overrides */
-@media (max-width: 640px) {
-  .compare-input {
-    font-size: 2.5rem;
-    padding: 1rem 1.5rem;
-    max-width: 100%;
-    border-radius: 1.5rem;
-  }
-  
-  /* Force smaller text on mobile */
-  .text-\[14rem\], .text-\[16rem\], .text-\[20rem\] {
-    font-size: 4rem !important;
-  }
-  
-  .text-\[12rem\] {
-    font-size: 3.5rem !important;
-  }
-  
-  .text-7xl {
-    font-size: 2.5rem !important;
-  }
-  
-  .text-6xl {
-    font-size: 2rem !important;
-  }
-  
-  .text-4xl {
-    font-size: 1.75rem !important;
-  }
-  
-  .text-3xl {
-    font-size: 1.5rem !important;
-  }
-  
-  .text-2xl {
-    font-size: 1.25rem !important;
-  }
-}
-
-/* Tablet overrides */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .text-\[14rem\], .text-\[16rem\], .text-\[20rem\] {
-    font-size: 8rem !important;
-  }
-  
-  .text-\[12rem\] {
-    font-size: 6rem !important;
-  }
-  
-  .text-7xl {
-    font-size: 3.5rem !important;
-  }
-}
-
-/* Animation utilities */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-in-from-bottom-4 {
-  from {
-    transform: translateY(1rem);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-from-top-12 {
-  from {
-    transform: translateY(-3rem);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-from-right-8 {
-  from {
-    transform: translateX(2rem);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes zoom-in-95 {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-in {
-  animation-duration: 700ms;
-  animation-fill-mode: both;
-}
-
-.fade-in { animation-name: fade-in; }
-.slide-in-from-bottom-4 { animation-name: slide-in-from-bottom-4; }
-.slide-in-from-top-12 { animation-name: slide-in-from-top-12; }
-.slide-in-from-right-8 { animation-name: slide-in-from-right-8; }
-.zoom-in-95 { animation-name: zoom-in-95; }
-.duration-700 { animation-duration: 700ms; }
-.duration-1000 { animation-duration: 1000ms; }
