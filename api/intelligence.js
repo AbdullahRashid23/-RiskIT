@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -45,7 +44,6 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Gemini API Error:', errorData);
       return res.status(response.status).json({ 
         error: 'Gemini API error', 
         details: errorData 
@@ -55,51 +53,38 @@ export default async function handler(req, res) {
     const result = await response.json();
     
     if (!result.candidates || result.candidates.length === 0) {
-      console.error('Empty candidates array:', result);
       return res.status(500).json({ 
-        error: 'Model returned empty response',
-        usageMetadata: result.usageMetadata 
+        error: 'Model returned empty response'
       });
     }
 
     const candidate = result.candidates[0];
-    if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-      console.error('Empty content:', candidate);
+    if (!candidate.content?.parts?.[0]?.text) {
       return res.status(500).json({ 
-        error: 'Model returned empty content',
-        finishReason: candidate.finishReason 
+        error: 'Model returned empty content'
       });
     }
 
-    let textContent = candidate.content.parts[0].text || '';
-    
-    // Remove markdown code blocks
+    let textContent = candidate.content.parts[0].text.trim();
     textContent = textContent.replace(/``````/g, '').trim();
     
     if (!textContent) {
-      console.error('Empty text content');
-      return res.status(500).json({ 
-        error: 'Model returned empty text',
-        candidate: candidate 
-      });
+      return res.status(500).json({ error: 'Empty response from model' });
     }
 
     let parsedData;
     try {
       parsedData = JSON.parse(textContent);
-    } catch (parseError) {
-      console.error('JSON Parse Error:', parseError);
-      console.error('Raw text:', textContent);
+    } catch (err) {
       return res.status(500).json({ 
-        error: 'Failed to parse JSON response',
-        rawText: textContent.substring(0, 500)
+        error: 'Failed to parse JSON',
+        rawText: textContent.substring(0, 300)
       });
     }
     
     return res.status(200).json(parsedData);
 
   } catch (error) {
-    console.error('Server error:', error);
     return res.status(500).json({ 
       error: 'Internal server error', 
       message: error.message 
