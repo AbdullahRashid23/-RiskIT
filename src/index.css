@@ -3,81 +3,96 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-deep: #030304;
+    --bg-surface: #09090b;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --accent-primary: #10b981; /* Emerald 500 */
+    --accent-glow: rgba(16, 185, 129, 0.15);
+  }
+
   body {
-    background-color: #030303;
+    background-color: var(--bg-deep);
     color: #e4e4e7;
-    font-family: 'Inter', -apple-system, sans-serif;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
     overflow-x: hidden;
-    /* Subtle background grid texture for financial feel */
-    background-image: 
-      radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.03) 0%, transparent 40%),
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 100% 100%, 40px 40px, 40px 40px;
+    /* Premium Noise Texture for that "Institutional" feel */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+  /* Input Reset */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; margin: 0; 
   }
 }
 
 @layer components {
-  /* --- LAYOUT ENGINE --- */
-  .bento-grid {
+  /* --- LAYOUT GRID --- */
+  .dashboard-grid {
     display: grid;
-    /* Smart wrapping: columns are minimum 380px, otherwise they stack */
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    /* Intelligently snaps to 1 column on mobile, 2 on tablet, 3 on wide screens */
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
     gap: 1.5rem;
-    padding: 1.5rem;
-    max-width: 2000px;
+    padding: 2rem;
+    max-width: 2400px;
     margin: 0 auto;
-    width: 100%;
   }
 
-  /* --- PREMIUM CARD COMPONENT --- */
-  .premium-card {
-    @apply relative flex flex-col p-8 rounded-[2rem] border border-white/5 bg-[#08080a] transition-all duration-500 overflow-hidden;
-    background: linear-gradient(180deg, rgba(12, 12, 14, 0.9) 0%, rgba(0, 0, 0, 1) 100%);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.05);
+  /* --- CARD COMPONENT --- */
+  .glass-card {
+    @apply relative flex flex-col p-8 rounded-[2rem] border border-white/5 bg-[#09090b] transition-all duration-500 overflow-hidden;
+    background: linear-gradient(180deg, rgba(20, 20, 23, 0.6) 0%, rgba(9, 9, 11, 1) 100%);
+    box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.5);
   }
   
-  .premium-card:hover {
-    @apply border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,1)];
+  .glass-card:hover {
+    @apply border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)];
     transform: translateY(-2px);
   }
 
-  /* --- TYPOGRAPHY ENGINE --- */
-  /* This prevents the "ARCHITECT" overflow by using viewport units strictly */
-  .fluid-title {
-    @apply font-black italic uppercase leading-[0.85] tracking-tighter text-white select-none;
-    /* Fits width of container dynamically */
-    font-size: clamp(3rem, 11cqi, 7rem); 
-    container-type: inline-size;
-  }
-  
-  .mono-label {
-    @apply font-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-medium;
+  /* --- TYPOGRAPHY --- */
+  /* Prevents "ARCHITEC T" break. Scales smoothly. */
+  .display-text {
+    @apply font-black italic uppercase leading-[0.9] tracking-tighter text-white select-none whitespace-nowrap;
+    font-size: clamp(2.5rem, 5vw, 5rem);
   }
 
-  /* --- FINANCIAL INPUTS --- */
-  .terminal-input {
-    @apply w-full bg-[#030304] border border-white/10 rounded-xl px-5 py-4 
-           text-white outline-none transition-all focus:border-emerald-500/50 
-           focus:bg-[#0a0a0c] text-sm font-bold placeholder:text-zinc-800
-           shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)];
+  /* --- FORM ELEMENTS --- */
+  .label-text {
+    @apply text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2 block ml-1;
+  }
+
+  .input-surface {
+    @apply w-full bg-[#050505] border border-zinc-800 rounded-xl px-5 py-4 
+           text-zinc-200 outline-none transition-all duration-300
+           focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20
+           placeholder:text-zinc-700 font-medium text-sm;
+  }
+
+  .input-surface:hover {
+    @apply border-zinc-700;
   }
 
   /* --- BUTTONS --- */
-  .btn-primary {
-    @apply w-full mt-auto flex items-center justify-between bg-white text-black px-6 py-5 
+  .btn-action {
+    @apply w-full flex items-center justify-between bg-white text-black px-6 py-5 
            rounded-xl font-black uppercase tracking-widest text-[11px] transition-all
-           hover:bg-zinc-200 active:scale-[0.98] shadow-[0_0_30px_rgba(255,255,255,0.1)];
+           hover:bg-zinc-200 active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.15)];
   }
 
-  /* --- UTILITIES --- */
-  .glass-tag {
-    @apply px-3 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-widest border border-white/10 bg-white/5 backdrop-blur-md;
+  .btn-icon-only {
+    @apply p-3 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all;
   }
-  
-  /* Scrollbar Polish */
-  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-  .custom-scrollbar::-webkit-scrollbar-track { background: #030303; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+  /* --- UTILS --- */
+  .badge {
+    @apply px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border;
+  }
 }
