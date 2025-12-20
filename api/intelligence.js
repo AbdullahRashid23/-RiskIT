@@ -53,16 +53,12 @@ export default async function handler(req, res) {
     const result = await response.json();
     
     if (!result.candidates || result.candidates.length === 0) {
-      return res.status(500).json({ 
-        error: 'Model returned empty response'
-      });
+      return res.status(500).json({ error: 'Model returned empty response' });
     }
 
     const candidate = result.candidates[0];
     if (!candidate.content?.parts?.[0]?.text) {
-      return res.status(500).json({ 
-        error: 'Model returned empty content'
-      });
+      return res.status(500).json({ error: 'Model returned empty content' });
     }
 
     let textContent = candidate.content.parts[0].text.trim();
