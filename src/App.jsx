@@ -22,7 +22,28 @@ import {
 } from 'lucide-react';
 import './index.css';
 
-// --- SUB-COMPONENTS ---
+// =====================
+// INTELLIGENCE HELPER
+// =====================
+
+async function callIntelligence(systemPrompt, userPrompt) {
+  const res = await fetch('/api/intelligence', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ systemPrompt, userPrompt }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Intelligence API failed with ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.text; // expected { text: "..." }
+}
+
+// =====================
+// SUB-COMPONENTS
+// =====================
 
 const Sparkline = ({ data }) => {
   const points = data
@@ -30,10 +51,7 @@ const Sparkline = ({ data }) => {
     .join(' L ');
   return (
     <div className="w-16 h-6 sm:w-20 sm:h-8 opacity-60">
-      <svg
-        viewBox="0 0 100 100"
-        className="w-full h-full overflow-visible"
-      >
+      <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
         <path
           d={`M ${points}`}
           fill="none"
@@ -96,7 +114,9 @@ const NavTab = ({ icon: Icon, label, active, onClick }) => (
   </button>
 );
 
-// --- MAIN APP ---
+// =====================
+// MAIN APP
+// =====================
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('architect');
@@ -107,7 +127,7 @@ export default function App() {
     amount: '10000',
     market: 'US Tech',
     horizon: 'Long Term',
-    halal: true
+    halal: true,
   });
   const [compInputs, setCompInputs] = useState({ s1: '', s2: '' });
   const [anaInput, setAnaInput] = useState('');
@@ -116,67 +136,290 @@ export default function App() {
   const [comparison, setComparison] = useState(null);
   const [analysis, setAnalysis] = useState(null);
 
-  const handleArchitect = () => {
+  // ==============
+  // ARCHITECT
+  // ==============
+
+  const handleArchitect = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const systemPrompt = `
+You are RISKIT ARCHITECT, a discrete-math financial node selector.
+
+Your task:
+1) Given an investment amount, market universe, time horizon, and halal filter,
+   choose EXACTLY 3 liquid stocks from that market.
+2) Use simple discrete logic:
+   - estimate momentum from recent price changes,
+   - penalize high volatility (frequent sign changes in returns),
+   - prefer higher liquidity.
+3) Output ONLY valid JSON with this exact shape:
+
+{
+  "strategy": "short natural language description",
+  "nodes": [
+    { "ticker": "MSFT", "name": "Microsoft Corp", "trend": [10,30,50,40,60,70,80] },
+    { "ticker": "AAPL", "name": "Apple Inc", "trend": [ ...7 ints 0-100... ] },
+    { "ticker": "GOOGL", "name": "Alphabet Inc", "trend": [ ...7 ints 0-100... ] }
+  ]
+}
+
+Rules:
+- "trend" must be exactly 7 INTEGER values between 0 and 100 representing
+  relative price over the last 7 observations.
+- Use REAL, actively traded stocks for the specified market.
+- If halal filter is ON, avoid obviously non-halal sectors (conventional banks,
+  alcohol, gambling, etc.).
+- Do NOT include any explanation text outside of that JSON.
+`;
+
+      const userPrompt = `
+Amount: ${recInputs.amount}
+Market universe: ${recInputs.market}
+Time horizon: ${recInputs.horizon}
+Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
+`;
+
+      const raw = await callIntelligence(systemPrompt, userPrompt);
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        // If Gemini wraps JSON in extra text, try to extract between first { and last }
+        const first = raw.indexOf('{');
+        const last = raw.lastIndexOf('}');
+        if (first !== -1 && last !== -1) {
+          parsed = JSON.parse(raw.slice(first, last + 1));
+        } else {
+          throw new Error('JSON parse failed');
+        }
+      }
+
+      // Basic validation
+      if (!parsed.nodes || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
+        throw new Error('Invalid architect payload');
+      }
+
+      // Ensure each node has a 7-point trend
+      const cleanedNodes = parsed.nodes.slice(0, 3).map((n) => {
+        const trend = Array.isArray(n.trend) && n.trend.length === 7
+          ? n.trend
+          : [10, 30, 50, 40, 60, 70, 80];
+        return {
+          ticker: n.ticker || 'NODE',
+          name: n.name || 'Unknown Node',
+          trend: trend.map((v) => Math.max(0, Math.min(100, Math.round(v)))),
+        };
+      });
+
+      setRecommendations({
+        strategy: parsed.strategy || 'AI-generated node architecture.',
+        nodes: cleanedNodes,
+      });
+    } catch (e) {
+      console.error('Architect error', e);
+      // Fallback static nodes
       setRecommendations({
         strategy:
           'Halal-Compliant US Tech Growth. Focuses on large-cap technology companies with strong competitive moats.',
         nodes: [
-          {
-            ticker: 'MSFT',
-            name: 'Microsoft Corp',
-            trend: [30, 40, 35, 50, 60, 55, 70]
-          },
-          {
-            ticker: 'AVGO',
-            name: 'Broadcom Inc',
-            trend: [20, 25, 20, 40, 35, 60, 75]
-          },
-          {
-            ticker: 'ADBE',
-            name: 'Adobe Systems',
-            trend: [40, 35, 50, 45, 60, 70, 80]
-          }
-        ]
+          { ticker: 'MSFT', name: 'Microsoft Corp', trend: [30, 40, 35, 50, 60, 55, 70] },
+          { ticker: 'AVGO', name: 'Broadcom Inc', trend: [20, 25, 20, 40, 35, 60, 75] },
+          { ticker: 'ADBE', name: 'Adobe Systems', trend: [40, 35, 50, 45, 60, 70, 80] },
+        ],
       });
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
-  const handleComparator = () => {
+  // ==============
+  // COMPARATOR
+  // ==============
+
+  const handleComparator = async () => {
     if (!compInputs.s1 || !compInputs.s2) return;
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const s1 = compInputs.s1.trim().toUpperCase();
+      const s2 = compInputs.s2.trim().toUpperCase();
+
+      const systemPrompt = `
+You are RISKIT COMPARATOR, comparing two stock tickers as logical nodes.
+
+You MUST:
+- Use financial reasoning (valuation, growth, volatility, halal compliance)
+- Decide ONE winner.
+- Output ONLY JSON with this exact shape:
+
+{
+  "winner": "TICKER",
+  "decision": "BUY TICKER",
+  "summary": "one sentence explanation focusing on key discrete advantages",
+  "scorecard": [
+    { "label": "Volatility", "s1": 60, "s2": 40 },
+    { "label": "Growth", "s1": 75, "s2": 55 },
+    { "label": "Sharia Compl.", "s1": 95, "s2": 30 }
+  ]
+}
+
+Rules:
+- "s1" refers to Node Alpha (${s1}), "s2" to Node Beta (${s2}).
+- Score range is 0 to 100 (integers).
+- Do NOT add any explanation outside the JSON.
+`;
+
+      const userPrompt = `
+Node Alpha: ${s1}
+Node Beta: ${s2}
+Market universe: ${recInputs.market}
+Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
+`;
+
+      const raw = await callIntelligence(systemPrompt, userPrompt);
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        const first = raw.indexOf('{');
+        const last = raw.lastIndexOf('}');
+        if (first !== -1 && last !== -1) {
+          parsed = JSON.parse(raw.slice(first, last + 1));
+        } else {
+          throw new Error('JSON parse failed');
+        }
+      }
+
+      const scorecard = Array.isArray(parsed.scorecard)
+        ? parsed.scorecard.map((row) => ({
+            label: row.label || 'Metric',
+            s1: Number.isFinite(row.s1) ? Math.max(0, Math.min(100, Math.round(row.s1))) : 50,
+            s2: Number.isFinite(row.s2) ? Math.max(0, Math.min(100, Math.round(row.s2))) : 50,
+          }))
+        : [];
+
+      setComparison({
+        winner: parsed.winner || s1,
+        decision: parsed.decision || `BUY ${parsed.winner || s1}`,
+        summary:
+          parsed.summary ||
+          `Comparator fallback: ${s1} slightly preferred over ${s2}.`,
+        scorecard:
+          scorecard.length > 0
+            ? scorecard
+            : [
+                { label: 'Volatility', s1: 60, s2: 45 },
+                { label: 'Growth', s1: 70, s2: 55 },
+                { label: 'Sharia Compl.', s1: 90, s2: 60 },
+              ],
+      });
+    } catch (e) {
+      console.error('Comparator error', e);
       setComparison({
         winner: compInputs.s1,
         decision: `BUY ${compInputs.s1}`,
-        summary: `superior Free Cash Flow Yield (4.2%) vs ${compInputs.s2} (1.8%), confirming stronger liquidity.`,
+        summary:
+          'Live comparator service unavailable. Fallback logic favours Node Alpha.',
         scorecard: [
-          { label: 'Volatility', s1: 85, s2: 40 },
-          { label: 'Growth', s1: 75, s2: 60 },
-          { label: 'Sharia Compl.', s1: 95, s2: 30 }
-        ]
+          { label: 'Volatility', s1: 60, s2: 45 },
+          { label: 'Growth', s1: 70, s2: 55 },
+          { label: 'Sharia Compl.', s1: 90, s2: 60 },
+        ],
       });
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
-  const handlePathfinder = () => {
+  // ==============
+  // PATHFINDER
+  // ==============
+
+  const handlePathfinder = async () => {
     if (!anaInput) return;
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const ticker = anaInput.trim().toUpperCase();
+
+      const systemPrompt = `
+You are RISKIT PATHFINDER, analysing ONE stock node in a risk graph.
+
+Output ONLY JSON with this exact shape:
+
+{
+  "ticker": "MSFT",
+  "name": "descriptive node name",
+  "health": 0.87,
+  "desc": "1–2 sentence technical / risk overview.",
+  "short": "Short term view label",
+  "long": "Long term view label"
+}
+
+Rules:
+- "health" is a number between 0 and 1 representing structural stability:
+  combine trend, volatility, and risk in a simple scoring.
+- Make the description concrete and focused on risk/structure, not generic.
+- No extra text outside this JSON.
+`;
+
+      const userPrompt = `
+Ticker: ${ticker}
+Market universe: ${recInputs.market}
+Time horizon: ${recInputs.horizon}
+Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
+`;
+
+      const raw = await callIntelligence(systemPrompt, userPrompt);
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        const first = raw.indexOf('{');
+        const last = raw.lastIndexOf('}');
+        if (first !== -1 && last !== -1) {
+          parsed = JSON.parse(raw.slice(first, last + 1));
+        } else {
+          throw new Error('JSON parse failed');
+        }
+      }
+
+      const health =
+        typeof parsed.health === 'number'
+          ? Math.max(0, Math.min(1, parsed.health))
+          : 0.5;
+
       setAnalysis({
-        ticker: anaInput,
-        name: 'ENTERPRISE NODE',
-        health: 0.98,
-        desc: 'Critical infrastructure node showing strong bullish divergence. Logic gate status: OPEN.',
-        short: 'Bullish Continuation',
-        long: 'Structural Hold'
+        ticker: parsed.ticker || ticker,
+        name: parsed.name || 'ENTERPRISE NODE',
+        health,
+        desc:
+          parsed.desc ||
+          'Neutral node status with balanced upside and downside risk.',
+        short: parsed.short || 'Sideways / Range',
+        long: parsed.long || 'Neutral Hold',
       });
+    } catch (e) {
+      console.error('Pathfinder error', e);
+      setAnalysis({
+        ticker: anaInput.trim().toUpperCase(),
+        name: 'ENTERPRISE NODE',
+        health: 0.5,
+        desc:
+          'Live pathfinder intelligence unavailable. Showing neutral synthetic node.',
+        short: 'Sideways / Range',
+        long: 'Neutral Hold',
+      });
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
+
+  // =====================
+  // RENDER (unchanged UI)
+  // =====================
 
   return (
     <div className="flex h-screen overflow-hidden selection:bg-emerald-500/30 selection:text-white">
@@ -271,7 +514,7 @@ export default function App() {
         </button>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
+      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col h-full relative bg-[#020202]">
         {/* Mobile Header */}
         <header className="lg:hidden h-14 border-b border-white/5 flex items-center justify-between px-4 sm:px-6 bg-[#020202]/90 backdrop-blur-md z-40 sticky top-0">
@@ -287,10 +530,7 @@ export default function App() {
             </span>
           </div>
           {loading && (
-            <RefreshCw
-              size={16}
-              className="text-emerald-500 animate-spin"
-            />
+            <RefreshCw size={16} className="text-emerald-500 animate-spin" />
           )}
         </header>
 
@@ -303,7 +543,7 @@ export default function App() {
                 <div className="absolute top-0 right-0 p-8 sm:p-10 opacity-5 pointer-events-none rotate-12">
                   <Layers className="w-24 h-24 sm:w-40 sm:h-40" />
                 </div>
-                <h2 className="title-fluid mb-4 sm:mb-8 relative z-10 text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
+                <h2 className="title-fluid mb-4 sm:mb-8 relative z-10">
                   ARCHITECT
                 </h2>
 
@@ -316,10 +556,10 @@ export default function App() {
                       type="number"
                       className="field-input"
                       value={recInputs.amount}
-                      onChange={e =>
+                      onChange={(e) =>
                         setRecInputs({
                           ...recInputs,
-                          amount: e.target.value
+                          amount: e.target.value,
                         })
                       }
                     />
@@ -332,10 +572,10 @@ export default function App() {
                       type="text"
                       className="field-input"
                       value={recInputs.market}
-                      onChange={e =>
+                      onChange={(e) =>
                         setRecInputs({
                           ...recInputs,
-                          market: e.target.value
+                          market: e.target.value,
                         })
                       }
                     />
@@ -348,10 +588,10 @@ export default function App() {
                       <select
                         className="field-input cursor-pointer"
                         value={recInputs.horizon}
-                        onChange={e =>
+                        onChange={(e) =>
                           setRecInputs({
                             ...recInputs,
-                            horizon: e.target.value
+                            horizon: e.target.value,
                           })
                         }
                       >
@@ -370,7 +610,7 @@ export default function App() {
                     onClick={() =>
                       setRecInputs({
                         ...recInputs,
-                        halal: !recInputs.halal
+                        halal: !recInputs.halal,
                       })
                     }
                   >
@@ -462,10 +702,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl opacity-30 py-8">
-                    <BarChart3
-                      size={40}
-                      className="mb-3 text-zinc-500"
-                    />
+                    <BarChart3 size={40} className="mb-3 text-zinc-500" />
                     <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-600">
                       No Nodes Selected
                     </p>
@@ -498,7 +735,7 @@ export default function App() {
 
                 <div className="flex-1 flex items-center relative z-10">
                   <h2
-                    className={`title-fluid w-full transition-all duration-700 text-center lg:text-left text-4xl sm:text-5xl md:text-6xl xl:text-7xl ${
+                    className={`title-fluid w-full transition-all duration-700 text-center lg:text-left ${
                       recommendations
                         ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 scale-100'
                         : 'text-zinc-800 scale-95 blur-sm'
@@ -528,7 +765,7 @@ export default function App() {
           {activeTab === 'comparator' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 animate-in zoom-in-95 duration-500">
               <div className="md:col-span-2 glass-card items-center text-center py-8 sm:py-10 md:py-12 min-h-[220px] md:min-h-[250px] justify-center">
-                <h2 className="title-fluid mb-3 sm:mb-4 text-3xl sm:text-4xl md:text-5xl lg:text-6xl">
+                <h2 className="title-fluid mb-3 sm:mb-4">
                   COMPARATOR
                 </h2>
                 <p className="text-zinc-500 italic font-medium max-w-xl mx-auto text-xs sm:text-sm">
@@ -545,10 +782,10 @@ export default function App() {
                   className="w-full bg-transparent border-b border-zinc-800 py-3 sm:py-4 text-center text-2xl sm:text-3xl md:text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors"
                   placeholder="TICKER A"
                   value={compInputs.s1}
-                  onChange={e =>
+                  onChange={(e) =>
                     setCompInputs({
                       ...compInputs,
-                      s1: e.target.value.toUpperCase()
+                      s1: e.target.value.toUpperCase(),
                     })
                   }
                 />
@@ -561,10 +798,10 @@ export default function App() {
                   className="w-full bg-transparent border-b border-zinc-800 py-3 sm:py-4 text-center text-2xl sm:text-3xl md:text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors"
                   placeholder="TICKER B"
                   value={compInputs.s2}
-                  onChange={e =>
+                  onChange={(e) =>
                     setCompInputs({
                       ...compInputs,
-                      s2: e.target.value.toUpperCase()
+                      s2: e.target.value.toUpperCase(),
                     })
                   }
                 />
@@ -588,15 +825,12 @@ export default function App() {
                     </div>
                     <div className="relative z-10">
                       <div className="flex items-center gap-2 sm:gap-3 mb-6 sm:mb-10">
-                        <Trophy
-                          size={18}
-                          className="text-yellow-600"
-                        />
+                        <Trophy size={18} className="text-yellow-600" />
                         <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-900">
                           Dominant Node
                         </span>
                       </div>
-                      <h2 className="title-fluid text-black mb-4 sm:mb-6 text-3xl sm:text-4xl md:text-5xl">
+                      <h2 className="title-fluid text-black mb-4 sm:mb-6">
                         {comparison.winner}
                       </h2>
                       <div className="inline-block px-3 sm:px-4 py-2 bg-black/5 border border-black/10 rounded-lg">
@@ -653,17 +887,12 @@ export default function App() {
           {activeTab === 'pathfinder' && (
             <div className="grid grid-cols-1 gap-4 md:gap-6 lg:gap-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="md:col-span-2 glass-card min-h-0 flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 border-emerald-500/20 shadow-[0_0_30px_-10px_rgba(16,185,129,0.15)]">
-                <Search
-                  className="text-zinc-500 ml-1 sm:ml-2"
-                  size={22}
-                />
+                <Search className="text-zinc-500 ml-1 sm:ml-2" size={22} />
                 <input
                   placeholder="ENTER NODE ID..."
                   className="flex-1 bg-transparent text-xl sm:text-2xl md:text-4xl font-black italic uppercase outline-none placeholder:text-zinc-800 text-white"
                   value={anaInput}
-                  onChange={e =>
-                    setAnaInput(e.target.value.toUpperCase())
-                  }
+                  onChange={(e) => setAnaInput(e.target.value.toUpperCase())}
                 />
                 <button
                   onClick={handlePathfinder}
@@ -677,7 +906,7 @@ export default function App() {
                 <div className="md:col-span-2 glass-card">
                   <div className="flex flex-col md:flex-row justify-between items-start mb-6 sm:mb-10 gap-6 sm:gap-8">
                     <div>
-                      <h2 className="title-fluid text-white text-3xl sm:text-4xl md:text-5xl">
+                      <h2 className="title-fluid text-white">
                         {analysis.ticker}
                       </h2>
                       <p className="field-label text-base sm:text-lg mt-3 sm:mt-4 text-zinc-400">
@@ -726,11 +955,8 @@ export default function App() {
                 </div>
               ) : (
                 <div className="md:col-span-2 h-[260px] sm:h-[320px] md:h-[400px] flex flex-col items-center justify-center opacity-30 border border-dashed border-zinc-700 rounded-[1.5rem] sm:rounded-[2rem] px-4 text-center">
-                  <Target
-                    size={52}
-                    className="mb-3 sm:mb-4 text-zinc-600"
-                  />
-                  <p className="title-fluid text-zinc-700 text-2xl sm:text-3xl md:text-4xl">
+                  <Target size={52} className="mb-3 sm:mb-4 text-zinc-600" />
+                  <p className="title-fluid text-zinc-700">
                     Awaiting Vector
                   </p>
                 </div>
@@ -741,10 +967,10 @@ export default function App() {
           {/* PULSE */}
           {activeTab === 'pulse' && (
             <div className="max-w-4xl mx-auto p-2 sm:p-4 space-y-3 sm:space-y-4 animate-in fade-in">
-              <h2 className="title-fluid text-center mb-6 sm:mb-10 text-3xl sm:text-4xl md:text-5xl">
+              <h2 className="title-fluid text-center mb-6 sm:mb-10">
                 LOGIC PULSE
               </h2>
-              {[1, 2, 3, 4].map(i => (
+              {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
                   className="group glass-card min-h-0 flex-row items-center justify-between p-4 sm:p-6 hover:bg-zinc-900/80 cursor-pointer border-l-4 border-l-emerald-500 gap-3"
