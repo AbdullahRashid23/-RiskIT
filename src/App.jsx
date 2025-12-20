@@ -22,12 +22,16 @@ import {
 } from 'lucide-react';
 import './index.css';
 
+// URL of your backend API (change to your deployed backend)
+const INTELLIGENCE_API_URL =
+  'https://risk-it-backend.vercel.app/api/intelligence';
+
 // =====================
 // INTELLIGENCE HELPER
 // =====================
 
 async function callIntelligence(systemPrompt, userPrompt, extra = {}) {
-  const res = await fetch('/api/intelligence', {
+  const res = await fetch(INTELLIGENCE_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ systemPrompt, userPrompt, ...extra }),
@@ -37,8 +41,7 @@ async function callIntelligence(systemPrompt, userPrompt, extra = {}) {
     throw new Error(`Intelligence API failed with ${res.status}`);
   }
 
-  const data = await res.json();
-  return data;
+  return await res.json();
 }
 
 // =====================
@@ -174,7 +177,7 @@ Rules:
   REAL_MARKET_DATA_JSON when possible).
 - Use ONLY tickers that exist in REAL_MARKET_DATA_JSON.
 - If halal filter is ON, avoid obviously non-halal sectors (banks, alcohol,
-  gambling, etc.) using the "sector" / "finnhubIndustry" style information.
+  gambling, etc.) using the sector/industry info.
 - Do NOT include any explanation text outside of that JSON.
 `;
 
@@ -185,16 +188,11 @@ Time horizon: ${recInputs.horizon}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      // choose a fixed candidate universe; backend will fetch real data
-      const universeTickers =
-        recInputs.market.toLowerCase().includes('us')
-          ? ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AVGO']
-          : ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AVGO'];
+      const universeTickers = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AVGO'];
 
       const parsed = await callIntelligence(systemPrompt, userPrompt, {
         mode: 'architect',
         tickers: universeTickers,
-        market: recInputs.market,
       });
 
       if (!parsed.nodes || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
@@ -280,7 +278,6 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       const parsed = await callIntelligence(systemPrompt, userPrompt, {
         mode: 'comparator',
         tickers: [s1, s2],
-        market: recInputs.market,
       });
 
       const scorecard = Array.isArray(parsed.scorecard)
@@ -364,7 +361,6 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       const parsed = await callIntelligence(systemPrompt, userPrompt, {
         mode: 'pathfinder',
         tickers: [ticker],
-        market: recInputs.market,
       });
 
       const health =
@@ -391,7 +387,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
   };
 
   // =====================
-  // RENDER (UI unchanged)
+  // RENDER
   // =====================
 
   return (
@@ -766,7 +762,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
                   Node Beta
                 </label>
                 <input
-                  className="w-full bg-transparent border-b border-zinc-800 py-3 sm:py-4 text-center text-2xl sm:3xl md:text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-transparent border-b border-zinc-800 py-3 sm:py-4 text-center text-2xl sm:text-3xl md:text-4xl font-black italic uppercase text-white placeholder:text-zinc-800 focus:outline-none focus:border-emerald-500 transition-colors"
                   placeholder="TICKER B"
                   value={compInputs.s2}
                   onChange={(e) =>
@@ -885,9 +881,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
                       </p>
                     </div>
                     <div className="text-right p-4 sm:p-6 bg-[#0c0c0e] rounded-2xl border border-white/5">
-                      <p className="field-label mb-1 sm:mb-2">
-                        Node Health
-                      </p>
+                      <p className="field-label mb-1 sm:mb-2">Node Health</p>
                       <div className="text-3xl sm:text-4xl md:text-5xl font-black text-emerald-500 shadow-emerald-500/20 drop-shadow-md">
                         {(analysis.health * 100).toFixed(0)}%
                       </div>
