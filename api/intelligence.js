@@ -1,7 +1,6 @@
 // pages/api/intelligence.js
 
 export default async function handler(req, res) {
-  // Basic CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -21,7 +20,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Keys
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) {
       return res
@@ -37,7 +35,7 @@ export default async function handler(req, res) {
     }
 
     // ============================
-    // 1) REAL MARKET DATA HELPERS
+    // MARKET DATA HELPERS
     // ============================
 
     async function getQuote(ticker) {
@@ -129,7 +127,10 @@ export default async function handler(req, res) {
       return { trendScore, volatilityScore, returns, trend };
     }
 
-    // Build model context from tickers
+    // ============================
+    // BUILD CONTEXT BY MODE
+    // ============================
+
     let realDataContext = '';
 
     if (mode === 'architect' && Array.isArray(tickers) && tickers.length > 0) {
@@ -186,9 +187,9 @@ export default async function handler(req, res) {
         'NODE_REAL = ' + JSON.stringify({ ...q, ...p, ...m }, null, 2);
     }
 
-    // ==============================
-    // 2) CALL GEMINI WITH CONTEXT
-    // ==============================
+    // ============================
+    // CALL GEMINI
+    // ============================
 
     const MODEL_ID = 'gemini-2.5-flash-preview-09-2025';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${geminiKey}`;
@@ -249,10 +250,9 @@ export default async function handler(req, res) {
 
     let textContent = candidate.content.parts[0].text || '';
 
-    // Remove ```
     textContent = textContent
-      .replace(/```json/gi, '')
       .replace(/```
+      .replace(/```/g, '')
       .trim();
 
     if (!textContent) {
