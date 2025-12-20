@@ -4,95 +4,89 @@
 
 @layer base {
   :root {
-    --bg-deep: #030304;
-    --bg-surface: #09090b;
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --accent-primary: #10b981; /* Emerald 500 */
-    --accent-glow: rgba(16, 185, 129, 0.15);
+    --bg-void: #020202;
+    --bg-card: #09090b;
+    --border-dim: rgba(255, 255, 255, 0.08);
+    --border-highlight: rgba(255, 255, 255, 0.15);
+    --emerald-glow: rgba(16, 185, 129, 0.5);
   }
 
   body {
-    background-color: var(--bg-deep);
+    background-color: var(--bg-void);
     color: #e4e4e7;
-    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow-x: hidden;
-    /* Premium Noise Texture for that "Institutional" feel */
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    /* Subtle noise texture for premium feel */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
   }
 
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg-deep); }
-  ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #52525b; }
-
-  /* Input Reset */
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button { 
-    -webkit-appearance: none; margin: 0; 
+  /* Remove default styling for inputs/selects */
+  input, select, textarea {
+    appearance: none;
+    -webkit-appearance: none;
   }
 }
 
 @layer components {
-  /* --- LAYOUT GRID --- */
-  .dashboard-grid {
+  /* --- LAYOUT GRID (The Fix for "Straight Lines") --- */
+  .bento-grid {
     display: grid;
-    /* Intelligently snaps to 1 column on mobile, 2 on tablet, 3 on wide screens */
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    /* Columns automatically resize. Minimum width 360px before stacking. */
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     gap: 1.5rem;
-    padding: 2rem;
-    max-width: 2400px;
+    padding: 1.5rem;
+    max-width: 2000px;
     margin: 0 auto;
+    width: 100%;
   }
 
-  /* --- CARD COMPONENT --- */
+  /* --- PREMIUM CARD --- */
   .glass-card {
-    @apply relative flex flex-col p-8 rounded-[2rem] border border-white/5 bg-[#09090b] transition-all duration-500 overflow-hidden;
-    background: linear-gradient(180deg, rgba(20, 20, 23, 0.6) 0%, rgba(9, 9, 11, 1) 100%);
-    box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.5);
+    @apply relative flex flex-col p-8 rounded-[1.5rem] border border-white/5 bg-[#09090b] transition-all duration-500 overflow-hidden;
+    background: linear-gradient(180deg, rgba(20, 20, 25, 0.4) 0%, rgba(9, 9, 11, 1) 100%);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
   }
   
   .glass-card:hover {
-    @apply border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)];
-    transform: translateY(-2px);
+    @apply border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)];
   }
 
-  /* --- TYPOGRAPHY --- */
-  /* Prevents "ARCHITEC T" break. Scales smoothly. */
-  .display-text {
-    @apply font-black italic uppercase leading-[0.9] tracking-tighter text-white select-none whitespace-nowrap;
-    font-size: clamp(2.5rem, 5vw, 5rem);
+  /* --- FLUID TYPOGRAPHY (The Fix for Overflow) --- */
+  .title-fluid {
+    @apply font-black italic uppercase leading-[0.85] tracking-tighter text-white select-none;
+    /* Scales between 3rem and 6rem based on viewport width */
+    font-size: clamp(3rem, 7vw, 6rem);
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
-  /* --- FORM ELEMENTS --- */
-  .label-text {
+  /* --- INPUTS (The Fix for White Boxes) --- */
+  .field-label {
     @apply text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2 block ml-1;
   }
 
-  .input-surface {
+  .field-input {
     @apply w-full bg-[#050505] border border-zinc-800 rounded-xl px-5 py-4 
            text-zinc-200 outline-none transition-all duration-300
            focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20
-           placeholder:text-zinc-700 font-medium text-sm;
-  }
-
-  .input-surface:hover {
-    @apply border-zinc-700;
+           placeholder:text-zinc-700 font-bold text-sm;
   }
 
   /* --- BUTTONS --- */
-  .btn-action {
+  .btn-primary {
     @apply w-full flex items-center justify-between bg-white text-black px-6 py-5 
            rounded-xl font-black uppercase tracking-widest text-[11px] transition-all
-           hover:bg-zinc-200 active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.15)];
-  }
-
-  .btn-icon-only {
-    @apply p-3 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all;
+           hover:bg-zinc-200 active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.1)];
   }
 
   /* --- UTILS --- */
-  .badge {
-    @apply px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border;
+  .badge-glass {
+    @apply px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border border-white/10 bg-white/5 backdrop-blur-md;
   }
+  
+  /* Scrollbar */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .custom-scroll::-webkit-scrollbar { width: 5px; }
+  .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 }
