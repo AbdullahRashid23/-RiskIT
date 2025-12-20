@@ -1,6 +1,7 @@
 // pages/api/intelligence.js
 
 export default async function handler(req, res) {
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -250,6 +251,7 @@ export default async function handler(req, res) {
 
     let textContent = candidate.content.parts[0].text || '';
 
+    // FIXED regex lines
     textContent = textContent
       .replace(/```
       .replace(/```/g, '')
