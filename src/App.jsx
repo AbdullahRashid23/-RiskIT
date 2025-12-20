@@ -22,19 +22,15 @@ import {
 } from 'lucide-react';
 import './index.css';
 
-// URL of your backend API (change to your deployed backend)
-const INTELLIGENCE_API_URL =
-  'https://risk-it-backend.vercel.app/api/intelligence';
-
 // =====================
 // INTELLIGENCE HELPER
 // =====================
 
-async function callIntelligence(systemPrompt, userPrompt, extra = {}) {
-  const res = await fetch(INTELLIGENCE_API_URL, {
+async function callIntelligence(systemPrompt, userPrompt) {
+  const res = await fetch('/api/intelligence', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ systemPrompt, userPrompt, ...extra }),
+    body: JSON.stringify({ systemPrompt, userPrompt }),
   });
 
   if (!res.ok) {
@@ -149,18 +145,14 @@ export default function App() {
       const systemPrompt = `
 You are RISKIT ARCHITECT, a discrete-math financial node selector.
 
-You are given REAL_MARKET_DATA_JSON which contains real quotes, profiles,
-and discrete metrics (trendScore, volatilityScore, trend[0-100]) for a
-candidate universe of tickers. You MUST base all node choices on that JSON.
-
 Your task:
 1) Given an investment amount, market universe, time horizon, and halal filter,
-   choose EXACTLY 3 liquid stocks from that candidate universe.
+   choose EXACTLY 3 liquid stocks from that market.
 2) Use simple discrete logic:
-   - estimate momentum from the provided normalized trend,
-   - penalize high volatility (frequent sign changes / high volatilityScore),
-   - prefer higher liquidity (proxied by stable prices and large exchanges).
-3) Output ONLY valid JSON with this exact shape:
+   - estimate momentum from recent price changes,
+   - penalize high volatility (frequent sign changes in returns),
+   - prefer higher liquidity.
+3) Output ONLY valid JSON with this exact shape (EXAMPLE – use real tickers):
 
 {
   "strategy": "short natural language description",
@@ -173,11 +165,10 @@ Your task:
 
 Rules:
 - "trend" must be exactly 7 INTEGER values between 0 and 100 representing
-  relative price over the last 7 observations (use the 'trend' arrays from
-  REAL_MARKET_DATA_JSON when possible).
-- Use ONLY tickers that exist in REAL_MARKET_DATA_JSON.
-- If halal filter is ON, avoid obviously non-halal sectors (banks, alcohol,
-  gambling, etc.) using the sector/industry info.
+  relative price over the last 7 observations.
+- Use REAL, actively traded stocks for the specified market.
+- If halal filter is ON, avoid obviously non-halal sectors (conventional banks,
+  alcohol, gambling, etc.).
 - Do NOT include any explanation text outside of that JSON.
 `;
 
@@ -188,12 +179,7 @@ Time horizon: ${recInputs.horizon}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const universeTickers = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'META', 'AVGO'];
-
-      const parsed = await callIntelligence(systemPrompt, userPrompt, {
-        mode: 'architect',
-        tickers: universeTickers,
-      });
+      const parsed = await callIntelligence(systemPrompt, userPrompt);
 
       if (!parsed.nodes || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
         throw new Error('Invalid architect payload');
@@ -237,18 +223,10 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       const systemPrompt = `
 You are RISKIT COMPARATOR, comparing two stock tickers as logical nodes.
 
-You are given NODE_ALPHA_REAL and NODE_BETA_REAL JSON, each containing
-real quotes, profile information, and discrete metrics:
-- trendScore (0-100, higher is stronger recent momentum),
-- volatilityScore (0-100, higher means more sign changes / volatility),
-- trend (array of 0-100 points).
-
 You MUST:
-- Use these JSON metrics for valuation/growth/trend/volatility reasoning.
-- Respect halal filter using sector/industry fields.
+- Use financial reasoning (valuation, growth, volatility, halal compliance)
 - Decide ONE winner.
-
-Output ONLY JSON with this exact shape:
+- Output ONLY JSON with this exact shape:
 
 {
   "winner": "TICKER",
@@ -264,7 +242,6 @@ Output ONLY JSON with this exact shape:
 Rules:
 - "s1" refers to Node Alpha (${s1}), "s2" to Node Beta (${s2}).
 - Score range is 0 to 100 (integers).
-- Use NODE_ALPHA_REAL and NODE_BETA_REAL data; do NOT invent numbers.
 - Do NOT add any explanation outside the JSON.
 `;
 
@@ -275,10 +252,7 @@ Market universe: ${recInputs.market}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const parsed = await callIntelligence(systemPrompt, userPrompt, {
-        mode: 'comparator',
-        tickers: [s1, s2],
-      });
+      const parsed = await callIntelligence(systemPrompt, userPrompt);
 
       const scorecard = Array.isArray(parsed.scorecard)
         ? parsed.scorecard.map((row) => ({
@@ -328,11 +302,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       const systemPrompt = `
 You are RISKIT PATHFINDER, analysing ONE stock node in a risk graph.
 
-You are given NODE_REAL JSON with:
-- real quote and profile fields,
-- trendScore, volatilityScore, and trend[0-100] discrete metrics.
-
-Output ONLY JSON with this shape:
+Output ONLY JSON with this exact shape:
 
 {
   "ticker": "T",
@@ -344,10 +314,9 @@ Output ONLY JSON with this shape:
 }
 
 Rules:
-- "health" is 0 to 1, combining trendScore (positive), volatilityScore
-  (negative), and any risk hints from profile/sector.
+- "health" is a number between 0 and 1 representing structural stability:
+  combine trend, volatility, and risk in a simple scoring.
 - Make the description concrete and focused on risk/structure, not generic.
-- Use NODE_REAL metrics, do not invent numbers.
 - No extra text outside this JSON.
 `;
 
@@ -358,10 +327,7 @@ Time horizon: ${recInputs.horizon}
 Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
 `;
 
-      const parsed = await callIntelligence(systemPrompt, userPrompt, {
-        mode: 'pathfinder',
-        tickers: [ticker],
-      });
+      const parsed = await callIntelligence(systemPrompt, userPrompt);
 
       const health =
         typeof parsed.health === 'number'
