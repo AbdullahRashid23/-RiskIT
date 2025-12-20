@@ -1,4 +1,7 @@
+// pages/api/intelligence.js
+
 export default async function handler(req, res) {
+  // Basic CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -12,20 +15,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { systemPrompt, userPrompt, mode, tickers, market } = req.body;
+    const { systemPrompt, userPrompt, mode, tickers } = req.body || {};
 
     if (!systemPrompt || !userPrompt) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+    // Keys
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      return res
+        .status(500)
+        .json({ error: 'GEMINI_API_KEY not configured on server' });
     }
 
     const finnhubKey = process.env.FINNHUB_API_KEY;
     if (!finnhubKey) {
-      return res.status(500).json({ error: 'FINNHUB_API_KEY not configured' });
+      return res
+        .status(500)
+        .json({ error: 'FINNHUB_API_KEY not configured on server' });
     }
 
     // ============================
@@ -76,8 +84,7 @@ export default async function handler(req, res) {
       if (!r.ok) return { prices: [] };
       const c = await r.json();
       if (c.s !== 'ok' || !Array.isArray(c.c)) return { prices: [] };
-      const closes = c.c.slice(-count);
-      return { prices: closes };
+      return { prices: c.c.slice(-count) };
     }
 
     function computeDiscreteMetrics(prices) {
@@ -89,13 +96,14 @@ export default async function handler(req, res) {
           trend: Array(7).fill(50),
         };
       }
+
       const returns = [];
       for (let i = 1; i < prices.length; i++) {
         returns.push((prices[i] - prices[i - 1]) / prices[i - 1]);
       }
 
       const totalR = (prices[prices.length - 1] - prices[0]) / prices[0];
-      let trendScore = Math.max(
+      const trendScore = Math.max(
         0,
         Math.min(100, Math.round(totalR * 400 + 50))
       );
@@ -118,32 +126,23 @@ export default async function handler(req, res) {
         Math.max(0, Math.min(100, Math.round(((p - minP) / range) * 100)))
       );
 
-      return {
-        trendScore,
-        volatilityScore,
-        returns,
-        trend,
-      };
+      return { trendScore, volatilityScore, returns, trend };
     }
 
-    // Decide which context to build
+    // Build model context from tickers
     let realDataContext = '';
 
     if (mode === 'architect' && Array.isArray(tickers) && tickers.length > 0) {
       const unique = [...new Set(tickers)].slice(0, 10);
       const detailed = [];
       for (const t of unique) {
-        const [quote, profile, candles] = await Promise.all([
+        const [q, p, c] = await Promise.all([
           getQuote(t),
           getProfile(t),
           getDailyCandles(t, 7),
         ]);
-        const metrics = computeDiscreteMetrics(candles.prices);
-        detailed.push({
-          ...quote,
-          ...profile,
-          ...metrics,
-        });
+        const m = computeDiscreteMetrics(c.prices);
+        detailed.push({ ...q, ...p, ...m });
       }
       realDataContext =
         'REAL_MARKET_DATA_JSON = ' + JSON.stringify(detailed, null, 2);
@@ -165,7 +164,6 @@ export default async function handler(req, res) {
       ]);
       const ma = computeDiscreteMetrics(ca.prices);
       const mb = computeDiscreteMetrics(cb.prices);
-
       realDataContext =
         'NODE_ALPHA_REAL = ' +
         JSON.stringify({ ...qa, ...pa, ...ma }, null, 2) +
@@ -193,13 +191,12 @@ export default async function handler(req, res) {
     // ==============================
 
     const MODEL_ID = 'gemini-2.5-flash-preview-09-2025';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${geminiKey}`;
 
     const finalSystemPrompt =
       systemPrompt +
       '\n\nYou are given JSON context with real market data and discrete metrics.\n' +
-      'Use ONLY that context for numeric reasoning about prices, momentum,\n' +
-      'volatility, and sectors. Do not hallucinate extra numbers.\n\n' +
+      'Use ONLY that context for numeric reasoning. Do not invent numbers.\n\n' +
       realDataContext;
 
     const payload = {
@@ -219,7 +216,7 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       console.error('Gemini API Error:', errorData);
       return res.status(response.status).json({
         error: 'Gemini API error',
@@ -230,7 +227,7 @@ export default async function handler(req, res) {
     const result = await response.json();
 
     if (!result.candidates || result.candidates.length === 0) {
-      console.error('Empty candidates array:', result);
+      console.error('Empty candidates:', result);
       return res.status(500).json({
         error: 'Model returned empty response',
         usageMetadata: result.usageMetadata,
@@ -252,9 +249,10 @@ export default async function handler(req, res) {
 
     let textContent = candidate.content.parts[0].text || '';
 
+    // Remove ```
     textContent = textContent
+      .replace(/```json/gi, '')
       .replace(/```
-      .replace(/```/g, '')
       .trim();
 
     if (!textContent) {
@@ -268,8 +266,8 @@ export default async function handler(req, res) {
     let parsedData;
     try {
       parsedData = JSON.parse(textContent);
-    } catch (parseError) {
-      console.error('JSON Parse Error:', parseError);
+    } catch (err) {
+      console.error('JSON parse error:', err);
       console.error('Raw text:', textContent);
       return res.status(500).json({
         error: 'Failed to parse JSON response',
