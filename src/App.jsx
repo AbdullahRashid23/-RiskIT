@@ -3,25 +3,28 @@ import {
   LayoutDashboard, Scale, Target, Radio, 
   Menu, X, ArrowRight, Layers, RefreshCw, 
   Activity, Trophy, Search, Network, Zap,
-  ShieldCheck, TrendingUp, BarChart3, Clock, Globe
+  TrendingUp, ShieldCheck, Clock, Globe, BarChart3
 } from 'lucide-react';
 import './index.css';
 
-// --- SUB-COMPONENTS (For Clean Code) ---
+// --- SUB-COMPONENTS ---
 
+// 1. Dynamic Sparkline
 const Sparkline = ({ data }) => {
   const points = data.map((val, i) => `${(i / (data.length - 1)) * 100},${100 - val}`).join(" L ");
   return (
-    <div className="w-20 h-8 relative opacity-50 group-hover:opacity-100 transition-opacity">
+    <div className="w-20 h-8 opacity-60">
       <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
         <path d={`M ${points}`} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="100" cy={100 - data[data.length - 1]} r="3" fill="#10b981" />
       </svg>
     </div>
   );
 };
 
+// 2. Node Row (List Item)
 const NodeRow = ({ ticker, name, trend }) => (
-  <div className="group flex items-center justify-between p-4 bg-[#0c0c0e] border border-zinc-800 rounded-xl hover:border-emerald-500/30 transition-all cursor-pointer">
+  <div className="flex items-center justify-between p-4 bg-[#0c0c0e] border border-zinc-800 rounded-xl hover:border-emerald-500/30 transition-all cursor-pointer group">
     <div className="flex items-center gap-4">
       <div className="w-10 h-10 rounded-lg bg-zinc-900 flex items-center justify-center font-black italic text-zinc-600 group-hover:text-emerald-500 group-hover:bg-emerald-500/10 transition-colors">
         {ticker[0]}
@@ -35,14 +38,15 @@ const NodeRow = ({ ticker, name, trend }) => (
   </div>
 );
 
-const NavLink = ({ icon: Icon, label, active, onClick }) => (
+// 3. Sidebar Tab
+const NavTab = ({ icon: Icon, label, active, onClick }) => (
   <button 
     onClick={onClick} 
     className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all group relative overflow-hidden ${
-      active ? 'bg-zinc-900 text-white shadow-inner' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40'
+      active ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40'
     }`}
   >
-    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-emerald-500 rounded-r-full" />}
+    {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-emerald-500 rounded-r-full" />}
     <Icon size={18} className={active ? "text-emerald-500" : "group-hover:scale-110 transition-transform"} />
     <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
   </button>
@@ -55,7 +59,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // States
+  // Data States
   const [recInputs, setRecInputs] = useState({ amount: '10000', market: 'US Tech', horizon: 'Long Term', halal: true });
   const [compInputs, setCompInputs] = useState({ s1: '', s2: '' });
   const [anaInput, setAnaInput] = useState('');
@@ -64,16 +68,16 @@ export default function App() {
   const [comparison, setComparison] = useState(null);
   const [analysis, setAnalysis] = useState(null);
 
-  // --- LOGIC HANDLERS ---
+  // --- HANDLERS ---
   const handleArchitect = () => {
     setLoading(true);
     setTimeout(() => {
       setRecommendations({
         strategy: "Halal-Compliant US Tech Growth. Focuses on large-cap technology companies with strong competitive moats.",
         nodes: [
-          { ticker: 'MSFT', name: 'Microsoft Corp', trend: [30, 45, 40, 60, 55, 75, 80] },
-          { ticker: 'AVGO', name: 'Broadcom Inc', trend: [20, 25, 30, 45, 40, 60, 70] },
-          { ticker: 'ADBE', name: 'Adobe Systems', trend: [40, 35, 50, 45, 60, 65, 80] }
+          { ticker: 'MSFT', name: 'Microsoft Corp', trend: [30, 40, 35, 50, 60, 55, 70] },
+          { ticker: 'AVGO', name: 'Broadcom Inc', trend: [20, 25, 20, 40, 35, 60, 75] },
+          { ticker: 'ADBE', name: 'Adobe Systems', trend: [40, 35, 50, 45, 60, 70, 80] }
         ]
       });
       setLoading(false);
@@ -126,18 +130,18 @@ export default function App() {
           </div>
           
           <nav className="space-y-2">
-            <NavLink icon={LayoutDashboard} label="Architect" active={activeTab === 'architect'} onClick={() => {setActiveTab('architect'); setIsSidebarOpen(false)}} />
-            <NavLink icon={Scale} label="Comparator" active={activeTab === 'comparator'} onClick={() => {setActiveTab('comparator'); setIsSidebarOpen(false)}} />
-            <NavLink icon={Target} label="Pathfinder" active={activeTab === 'pathfinder'} onClick={() => {setActiveTab('pathfinder'); setIsSidebarOpen(false)}} />
-            <NavLink icon={Radio} label="Pulse" active={activeTab === 'pulse'} onClick={() => {setActiveTab('pulse'); setIsSidebarOpen(false)}} />
+            <NavTab icon={LayoutDashboard} label="Architect" active={activeTab === 'architect'} onClick={() => {setActiveTab('architect'); setIsSidebarOpen(false)}} />
+            <NavTab icon={Scale} label="Comparator" active={activeTab === 'comparator'} onClick={() => {setActiveTab('comparator'); setIsSidebarOpen(false)}} />
+            <NavTab icon={Target} label="Pathfinder" active={activeTab === 'pathfinder'} onClick={() => {setActiveTab('pathfinder'); setIsSidebarOpen(false)}} />
+            <NavTab icon={Radio} label="Pulse" active={activeTab === 'pulse'} onClick={() => {setActiveTab('pulse'); setIsSidebarOpen(false)}} />
           </nav>
         </div>
 
-        {/* --- ENGINEERING CREDITS --- */}
+        {/* --- ENGINEERING TEAM CREDITS --- */}
         <div className="mt-auto p-6 border-t border-white/5 bg-[#050505]">
           <div className="mb-6 opacity-60 hover:opacity-100 transition-opacity">
              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Engineering Team</p>
-             <div className="space-y-1.5 font-mono text-[10px] text-zinc-400">
+             <div className="space-y-2 font-mono text-[10px] text-zinc-400">
                <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-700 rounded-full"/> Abdullah Rashid</div>
                <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-700 rounded-full"/> Moawiz</div>
                <div className="flex items-center gap-2"><div className="w-1 h-1 bg-zinc-700 rounded-full"/> Muhammad Abdullah</div>
@@ -164,9 +168,9 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-8">
           
-          {/* =======================================================
+          {/* =================================================================
               1. ARCHITECT MODE
-             ======================================================= */}
+             ================================================================= */}
           {activeTab === 'architect' && (
             <div className="bento-grid animate-in fade-in slide-in-from-bottom-4 duration-700">
               
@@ -178,6 +182,7 @@ export default function App() {
                 <div className="space-y-6 relative z-10">
                   <div>
                     <label className="field-label flex items-center gap-2"><TrendingUp size={12}/> Investment Capacity</label>
+                    {/* FIXED: Dark Input */}
                     <input type="number" className="field-input" value={recInputs.amount} onChange={e => setRecInputs({...recInputs, amount: e.target.value})} />
                   </div>
                   <div>
@@ -222,7 +227,7 @@ export default function App() {
               {/* OUTPUT CARD */}
               <div className="glass-card bg-[#050505]/60">
                 <div className="flex justify-between items-start mb-6">
-                  <span className="badge-glass text-blue-400 border-blue-500/20 bg-blue-500/5">Strategy Inferred</span>
+                  <span className="badge text-blue-400 border-blue-500/20 bg-blue-500/5">Strategy Inferred</span>
                   {recommendations && <span className="text-[9px] font-mono text-emerald-500 uppercase animate-pulse">Live Feed</span>}
                 </div>
                 
@@ -235,7 +240,7 @@ export default function App() {
                     {recommendations.nodes.map((node, i) => <NodeRow key={i} {...node} />)}
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl opacity-30">
+                  <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl opacity-20">
                      <BarChart3 size={48} className="mb-4 text-zinc-500"/>
                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No Nodes Selected</p>
                   </div>
@@ -255,6 +260,7 @@ export default function App() {
                  </div>
                  
                  <div className="flex-1 flex items-center relative z-10">
+                    {/* FLUID TITLE - Never Overflows */}
                     <h2 className={`title-fluid w-full transition-all duration-700 ${recommendations ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 scale-100' : 'text-zinc-800 scale-95 blur-sm'}`}>
                       {recommendations ? "RESILIENT" : "IDLE"}
                     </h2>
@@ -268,12 +274,12 @@ export default function App() {
             </div>
           )}
 
-          {/* =======================================================
+          {/* =================================================================
               2. COMPARATOR MODE
-             ======================================================= */}
+             ================================================================= */}
           {activeTab === 'comparator' && (
             <div className="bento-grid animate-in zoom-in-95 duration-500">
-               {/* Header Banner */}
+               {/* HEADER - Centered */}
                <div className="md:col-span-2 glass-card items-center text-center py-12 min-h-[250px] justify-center">
                   <h2 className="title-fluid mb-4 text-[4rem]">COMPARATOR</h2>
                   <p className="text-zinc-500 italic font-medium max-w-lg">
@@ -281,7 +287,7 @@ export default function App() {
                   </p>
                </div>
 
-               {/* Inputs */}
+               {/* INPUTS (Split View) */}
                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="glass-card py-10">
                      <label className="field-label text-center w-full">Node Alpha</label>
@@ -304,6 +310,7 @@ export default function App() {
                </div>
                
                <div className="md:col-span-2">
+                 {/* FIXED: Button is not a massive banner anymore */}
                  <button onClick={handleComparator} disabled={loading} className="btn-primary justify-center py-6 text-sm">
                    {loading ? 'Auditing Nodes...' : 'Resolve Logic Conflict'}
                  </button>
@@ -319,7 +326,7 @@ export default function App() {
                             <Trophy size={20} className="text-yellow-600"/>
                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900">Dominant Node</span>
                          </div>
-                         <h2 className="text-[6rem] md:text-[8rem] leading-[0.8] font-black italic uppercase tracking-tighter mb-6 text-black">
+                         <h2 className="title-fluid text-black mb-6">
                            {comparison.winner}
                          </h2>
                          <div className="inline-block px-4 py-2 bg-black/5 border border-black/10 rounded-lg">
@@ -357,11 +364,12 @@ export default function App() {
             </div>
           )}
 
-          {/* =======================================================
+          {/* =================================================================
               3. PATHFINDER MODE
-             ======================================================= */}
+             ================================================================= */}
           {activeTab === 'pathfinder' && (
             <div className="bento-grid animate-in fade-in slide-in-from-right-8 duration-500">
+               {/* SEARCH BAR - Fixed Button Size */}
                <div className="md:col-span-2 glass-card min-h-0 flex-row items-center gap-6 p-6 border-emerald-500/20 shadow-[0_0_30px_-10px_rgba(16,185,129,0.15)]">
                   <Search className="text-zinc-500 ml-2" size={24} />
                   <input 
@@ -410,15 +418,15 @@ export default function App() {
                ) : (
                  <div className="md:col-span-2 h-[400px] flex flex-col items-center justify-center opacity-30 border border-dashed border-zinc-700 rounded-[2rem]">
                     <Target size={64} className="mb-4 text-zinc-600" />
-                    <p className="title-fluid text-[3rem] text-zinc-700">Awaiting Vector</p>
+                    <p className="title-fluid text-zinc-700">Awaiting Vector</p>
                  </div>
                )}
             </div>
           )}
 
-          {/* =======================================================
+          {/* =================================================================
               4. PULSE MODE
-             ======================================================= */}
+             ================================================================= */}
           {activeTab === 'pulse' && (
              <div className="max-w-4xl mx-auto p-4 space-y-4 animate-in fade-in">
                 <h2 className="title-fluid text-center mb-10 text-[4rem]">LOGIC PULSE</h2>
@@ -431,7 +439,7 @@ export default function App() {
                             <p className="field-label mt-1 text-zinc-500">Impact: Moderate // Sector: Tech</p>
                          </div>
                       </div>
-                      <div className="badge-glass bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Stable</div>
+                      <div className="badge bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Stable</div>
                    </div>
                 ))}
              </div>
