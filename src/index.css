@@ -3,108 +3,76 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --bg-dark: #050505;
-    --card-bg: #09090b;
-    --border-subtle: #1c1c1f;
-    --border-active: #27272a;
-    --accent-zinc: #f4f4f5;
-    --text-muted: #71717a;
-  }
-
-  * {
-    border-color: var(--border-subtle);
-    box-sizing: border-box;
+  body {
+    background-color: #050505;
+    color: #f4f4f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden; /* Prevents horizontal scroll on mobile */
   }
   
-  body {
-    background-color: var(--bg-dark);
-    color: var(--accent-zinc);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    scroll-behavior: smooth;
-    /* Prevents horizontal "wobble" on mobile */
-    overflow-x: hidden; 
-    width: 100%;
+  /* Remove default select arrow for cleaner UI */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
   }
 }
 
 @layer components {
-  /* Fluid Layout Container */
-  .dashboard-container {
+  /* THE GRID: Stacks on mobile, 3 columns on Desktop */
+  .bento-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    padding: 1rem;
-    max-width: 1600px;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 2rem;
+    padding: 2rem;
+    max-width: 1800px;
     margin: 0 auto;
-    /* Modern Container Query setup */
-    container-type: inline-size;
-  }
-
-  /* Responsive Grid Logic without Media Queries where possible */
-  .main-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
-    gap: 1.5rem;
     width: 100%;
   }
 
-  /* The "Glass" Card */
-  .glass-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-subtle);
-    border-radius: 2rem;
-    padding: clamp(1.5rem, 4cqw, 2.5rem);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), border-color 0.3s;
-    overflow: hidden;
+  /* PREMIUM CARD: The container for each section */
+  .premium-card {
+    @apply relative flex flex-col p-8 md:p-10 rounded-[2.5rem] border border-zinc-800/60 bg-[#09090b] transition-all duration-500 overflow-hidden;
+    background: linear-gradient(180deg, rgba(9,9,11,1) 0%, rgba(5,5,5,1) 100%);
+    min-height: 600px; /* Ensures vertical height for grandeur */
+  }
+  
+  .premium-card:hover {
+    @apply border-zinc-700 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)];
   }
 
-  .glass-card:hover {
-    border-color: var(--border-active);
+  /* TYPOGRAPHY: The massive headers */
+  .massive-title {
+    @apply font-black italic uppercase leading-[0.85] tracking-tighter text-white select-none;
+    font-size: clamp(3.5rem, 6vw, 6rem); /* Responsive scaling */
   }
 
-  /* Inputs: Better Touch Targets */
-  .input-field {
-    @apply w-full bg-black/40 border border-[#27272a] rounded-xl px-5 py-4 text-base 
-           transition-all duration-300 focus:ring-2 focus:ring-zinc-800 focus:border-zinc-500
-           outline-none placeholder:text-zinc-700;
+  /* INPUTS: High-end form fields */
+  .input-group {
+    @apply space-y-3;
   }
-}
+  
+  .input-label {
+    @apply text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em] ml-1 block;
+  }
 
-/* FLUID TYPOGRAPHY 
-   Scales perfectly from 320px to 1920px 
-*/
-.text-fluid-huge {
-  font-size: clamp(3rem, 15vw, 12rem);
-  line-height: 0.85;
-  font-weight: 900;
-  letter-spacing: -0.06em;
-  text-transform: uppercase;
-  font-style: italic;
-}
+  .input-field-dark {
+    @apply w-full bg-[#0c0c0e] border border-zinc-800 rounded-2xl px-6 py-5 
+           text-zinc-200 outline-none transition-all focus:border-zinc-600 
+           text-sm font-medium placeholder:text-zinc-700;
+  }
 
-.text-fluid-strategy {
-  font-size: clamp(1.1rem, 2.5vw, 1.75rem);
-  line-height: 1.4;
-  font-weight: 500;
-  color: #d4d4d8;
-}
+  /* BUTTONS: The white pill button */
+  .btn-initialize {
+    @apply w-full mt-8 flex items-center justify-between bg-white text-black px-8 py-6 
+           rounded-[2rem] font-black uppercase tracking-widest text-sm transition-transform
+           hover:scale-[1.02] active:scale-95 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)];
+  }
 
-/* Side Navigation: Responsive behavior */
-.side-nav {
-  @apply fixed bottom-0 left-0 w-full h-16 bg-black/80 backdrop-blur-xl border-t border-zinc-900 z-50
-         lg:relative lg:h-screen lg:w-72 lg:border-t-0 lg:border-r lg:bg-transparent;
-}
-
-/* Custom Scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 10px;
+  /* UTILS */
+  .glass-badge {
+    @apply px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border backdrop-blur-md;
+  }
 }
