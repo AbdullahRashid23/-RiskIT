@@ -153,14 +153,14 @@ Your task:
    - estimate momentum from recent price changes,
    - penalize high volatility (frequent sign changes in returns),
    - prefer higher liquidity.
-3) Output ONLY valid JSON with this exact shape:
+3) Output ONLY valid JSON with this exact shape (EXAMPLE – use real tickers):
 
 {
   "strategy": "short natural language description",
   "nodes": [
-    { "ticker": "MSFT", "name": "Microsoft Corp", "trend": [10,30,50,40,60,70,80] },
-    { "ticker": "AAPL", "name": "Apple Inc", "trend": [ ...7 ints 0-100... ] },
-    { "ticker": "GOOGL", "name": "Alphabet Inc", "trend": [ ...7 ints 0-100... ] }
+    { "ticker": "T1", "name": "Stock 1 Full Name", "trend": [12,34,50,60,72,80,90] },
+    { "ticker": "T2", "name": "Stock 2 Full Name", "trend": [ ...7 ints 0-100... ] },
+    { "ticker": "T3", "name": "Stock 3 Full Name", "trend": [ ...7 ints 0-100... ] }
   ]
 }
 
@@ -186,7 +186,6 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       try {
         parsed = JSON.parse(raw);
       } catch {
-        // If Gemini wraps JSON in extra text, try to extract between first { and last }
         const first = raw.indexOf('{');
         const last = raw.lastIndexOf('}');
         if (first !== -1 && last !== -1) {
@@ -196,16 +195,15 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
         }
       }
 
-      // Basic validation
       if (!parsed.nodes || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
         throw new Error('Invalid architect payload');
       }
 
-      // Ensure each node has a 7-point trend
       const cleanedNodes = parsed.nodes.slice(0, 3).map((n) => {
-        const trend = Array.isArray(n.trend) && n.trend.length === 7
-          ? n.trend
-          : [10, 30, 50, 40, 60, 70, 80];
+        const trend =
+          Array.isArray(n.trend) && n.trend.length === 7
+            ? n.trend
+            : [0, 20, 40, 60, 80, 60, 40];
         return {
           ticker: n.ticker || 'NODE',
           name: n.name || 'Unknown Node',
@@ -219,16 +217,8 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       });
     } catch (e) {
       console.error('Architect error', e);
-      // Fallback static nodes
-      setRecommendations({
-        strategy:
-          'Halal-Compliant US Tech Growth. Focuses on large-cap technology companies with strong competitive moats.',
-        nodes: [
-          { ticker: 'MSFT', name: 'Microsoft Corp', trend: [30, 40, 35, 50, 60, 55, 70] },
-          { ticker: 'AVGO', name: 'Broadcom Inc', trend: [20, 25, 20, 40, 35, 60, 75] },
-          { ticker: 'ADBE', name: 'Adobe Systems', trend: [40, 35, 50, 45, 60, 70, 80] },
-        ],
-      });
+      // On error: show standby state instead of any fixed stocks
+      setRecommendations(null);
     } finally {
       setLoading(false);
     }
@@ -295,8 +285,12 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       const scorecard = Array.isArray(parsed.scorecard)
         ? parsed.scorecard.map((row) => ({
             label: row.label || 'Metric',
-            s1: Number.isFinite(row.s1) ? Math.max(0, Math.min(100, Math.round(row.s1))) : 50,
-            s2: Number.isFinite(row.s2) ? Math.max(0, Math.min(100, Math.round(row.s2))) : 50,
+            s1: Number.isFinite(row.s1)
+              ? Math.max(0, Math.min(100, Math.round(row.s1)))
+              : 50,
+            s2: Number.isFinite(row.s2)
+              ? Math.max(0, Math.min(100, Math.round(row.s2)))
+              : 50,
           }))
         : [];
 
@@ -317,17 +311,7 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       });
     } catch (e) {
       console.error('Comparator error', e);
-      setComparison({
-        winner: compInputs.s1,
-        decision: `BUY ${compInputs.s1}`,
-        summary:
-          'Live comparator service unavailable. Fallback logic favours Node Alpha.',
-        scorecard: [
-          { label: 'Volatility', s1: 60, s2: 45 },
-          { label: 'Growth', s1: 70, s2: 55 },
-          { label: 'Sharia Compl.', s1: 90, s2: 60 },
-        ],
-      });
+      setComparison(null);
     } finally {
       setLoading(false);
     }
@@ -349,7 +333,7 @@ You are RISKIT PATHFINDER, analysing ONE stock node in a risk graph.
 Output ONLY JSON with this exact shape:
 
 {
-  "ticker": "MSFT",
+  "ticker": "T",
   "name": "descriptive node name",
   "health": 0.87,
   "desc": "1–2 sentence technical / risk overview.",
@@ -403,22 +387,14 @@ Halal filter: ${recInputs.halal ? 'ON' : 'OFF'}
       });
     } catch (e) {
       console.error('Pathfinder error', e);
-      setAnalysis({
-        ticker: anaInput.trim().toUpperCase(),
-        name: 'ENTERPRISE NODE',
-        health: 0.5,
-        desc:
-          'Live pathfinder intelligence unavailable. Showing neutral synthetic node.',
-        short: 'Sideways / Range',
-        long: 'Neutral Hold',
-      });
+      setAnalysis(null);
     } finally {
       setLoading(false);
     }
   };
 
   // =====================
-  // RENDER (unchanged UI)
+  // RENDER (same UI)
   // =====================
 
   return (
