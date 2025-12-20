@@ -1,4 +1,4 @@
-// pages/api/intelligence.js
+// api/intelligence.js  (or pages/api/intelligence.js for Next.js)
 
 export default async function handler(req, res) {
   // CORS
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
         returns.push((prices[i] - prices[i - 1]) / prices[i - 1]);
       }
 
-      const totalR = (prices[prices.length - 1] - prices[0]) / prices[0];
+      const totalR = (prices[prices.length - 1] - prices) / prices;
       const trendScore = Math.max(
         0,
         Math.min(100, Math.round(totalR * 400 + 50))
@@ -177,7 +177,7 @@ export default async function handler(req, res) {
       Array.isArray(tickers) &&
       tickers.length === 1
     ) {
-      const t = tickers[0];
+      const t = tickers;
       const [q, p, c] = await Promise.all([
         getQuote(t),
         getProfile(t),
@@ -192,7 +192,7 @@ export default async function handler(req, res) {
     // CALL GEMINI
     // ============================
 
-    const MODEL_ID = 'gemini-2.5-flash-preview-09-2025';
+    const MODEL_ID = 'gemini-2.0-flash-exp';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${geminiKey}`;
 
     const finalSystemPrompt =
@@ -236,7 +236,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const candidate = result.candidates[0];
+    const candidate = result.candidates;
     if (
       !candidate.content ||
       !candidate.content.parts ||
@@ -249,12 +249,12 @@ export default async function handler(req, res) {
       });
     }
 
-    let textContent = candidate.content.parts[0].text || '';
+    let textContent = candidate.content.parts.text || '';
 
-    // FIXED regex lines
+    // ✅ FIXED: Remove markdown code fences
     textContent = textContent
+      .replace(/```json/gi, '')
       .replace(/```
-      .replace(/```/g, '')
       .trim();
 
     if (!textContent) {
