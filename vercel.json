@@ -4,8 +4,8 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "functions": {
-    "api/intelligence.js": {
-      "runtime": "nodejs20.x"
+    "api/**/*.js": {
+      "runtime": "@vercel/node@3.2.14"
     }
   },
   "rewrites": [
