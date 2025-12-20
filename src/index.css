@@ -25,13 +25,13 @@
   body {
     background-color: var(--bg-void);
     color: #e4e4e7;
-    font-family: 'Inter', -apple-system, system-ui, -apple-system, BlinkMacSystemFont,
+    font-family: 'Inter', -apple-system, system-ui, BlinkMacSystemFont,
       'Segoe UI', sans-serif;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: geometricPrecision;
 
-    /* Subtle premium noise + radial vignette */
+    /* Subtle premium noise + vignette */
     background-image:
       radial-gradient(circle at top, rgba(16, 185, 129, 0.18) 0, transparent 55%),
       radial-gradient(circle at bottom, rgba(24, 24, 27, 1) 0, #020202 60%),
@@ -54,7 +54,6 @@
     outline-offset: 2px;
   }
 
-  /* Smooth transitions for theme / layout changes */
   *::selection {
     background-color: rgba(16, 185, 129, 0.24);
     color: #f9fafb;
@@ -68,15 +67,15 @@
   /* --- LAYOUT GRID --- */
   .bento-grid {
     display: grid;
+    /* Cards can shrink to 280px so layout adapts on laptop/tablet */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.25rem;
     padding: 1.25rem;
     max-width: 2200px;
     margin: 0 auto;
     width: 100%;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
   }
 
-  /* Small screens: reduce padding/gap a bit */
   @media (max-width: 640px) {
     .bento-grid {
       gap: 1rem;
@@ -89,16 +88,17 @@
     @apply relative flex flex-col rounded-[var(--radius-xl)] border border-white/5
       transition-all duration-500 overflow-hidden;
     padding: clamp(1.25rem, 3vw, 2.5rem);
-    background:
-      linear-gradient(180deg, rgba(24, 24, 27, 0.85) 0%, rgba(9, 9, 11, 1) 100%);
+    background: linear-gradient(180deg, rgba(24, 24, 27, 0.85) 0%, rgba(9, 9, 11, 1) 100%);
     box-shadow: var(--shadow-soft);
     backdrop-filter: blur(20px) saturate(1.25);
     -webkit-backdrop-filter: blur(20px) saturate(1.25);
 
-    /* Container query for truly responsive headings */
+    /* Container query for responsive headings */
     container-type: inline-size;
     container-name: card;
-    min-height: 360px;
+
+    /* IMPORTANT: content-driven height */
+    min-height: 0;
   }
 
   .glass-card:hover {
@@ -107,31 +107,37 @@
     transform: translateY(-2px);
   }
 
-  /* Compact cards (for rows / list items if needed) */
+  /* Compact cards (for COMPARATOR Alpha/Beta etc.) */
   .glass-card--compact {
-    min-height: auto;
-    padding: clamp(0.75rem, 2vw, 1.25rem);
+    min-height: 0;
+    padding: clamp(1rem, 2.5vw, 1.75rem);
     border-radius: var(--radius-lg);
   }
 
-  /* --- TYPOGRAPHY (Fluid heading inside card) --- */
+  /* Optional tall hero cards if you want them */
+  .glass-card--tall {
+    min-height: 420px;
+  }
+
+  /* --- TYPOGRAPHY (Fluid title without overflow) --- */
   .title-fluid {
     @apply font-black italic uppercase leading-[0.85] tracking-tighter text-white select-none;
-    font-size: 15cqi; /* scales with card width */
+    /* clamp so it never overloads cards */
+    font-size: clamp(1.8rem, 10cqi, 4rem);
     word-break: break-word;
     hyphens: auto;
   }
 
-  /* Smaller title when card is very narrow */
-  @container card (max-width: 420px) {
+  @container card (min-width: 900px) {
     .title-fluid {
-      font-size: 11cqi;
+      font-size: clamp(2.4rem, 8cqi, 4.8rem);
+      letter-spacing: -0.04em;
     }
   }
 
-  @container card (min-width: 900px) {
+  @container card (max-width: 420px) {
     .title-fluid {
-      letter-spacing: -0.04em;
+      font-size: clamp(1.6rem, 9cqi, 2.6rem);
     }
   }
 
@@ -145,8 +151,8 @@
   .field-input {
     @apply w-full border border-zinc-800 rounded-xl text-zinc-200 outline-none
       transition-all duration-300 placeholder:text-zinc-700 font-bold text-sm;
-    padding-inline: 1.1rem;
-    padding-block: 0.85rem;
+    padding-inline: 1rem;
+    padding-block: 0.75rem;
     background-color: rgba(9, 9, 11, 0.9);
     box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.35);
   }
@@ -161,19 +167,19 @@
 
   @media (max-width: 640px) {
     .field-input {
+      font-size: 0.8rem;
       border-radius: 0.9rem;
-      padding-block: 0.75rem;
-      font-size: 0.825rem;
+      padding-block: 0.65rem;
     }
   }
 
   /* --- PRIMARY BUTTON --- */
   .btn-primary {
     @apply inline-flex items-center justify-between font-black uppercase tracking-widest
-      text-[11px] rounded-xl transition-all;
+      text-[10px] rounded-xl transition-all;
     width: 100%;
-    padding-inline: 1.4rem;
-    padding-block: 1.05rem;
+    padding-inline: 1.25rem;
+    padding-block: 0.9rem;
 
     background: radial-gradient(circle at 0% 0%, #ffffff, #f9fafb 40%, #e5e7eb 100%);
     color: #020617;
@@ -208,10 +214,10 @@
 
   @media (max-width: 640px) {
     .btn-primary {
-      font-size: 10px;
+      font-size: 9px;
       border-radius: 0.9rem;
       padding-inline: 1rem;
-      padding-block: 0.9rem;
+      padding-block: 0.8rem;
     }
   }
 
@@ -238,12 +244,23 @@
     border-radius: 4px;
   }
 
-  /* --- OPTIONAL: subtle card border glow when "active" (you can add class in JSX) --- */
+  /* Optional “active” glow for important cards */
   .glass-card--active {
     border-color: var(--accent-strong);
     box-shadow:
       0 0 0 1px rgba(16, 185, 129, 0.55),
       0 22px 70px rgba(16, 185, 129, 0.25);
+  }
+
+  /* Helper for nicer row hover (add class in JSX if you want) */
+  .node-row-hover {
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .node-row-hover:hover {
+    background-color: #050509;
+    border-color: var(--accent-soft);
+    transform: translateY(-1px);
   }
 }
 
@@ -251,7 +268,6 @@
    UTILITIES LAYER (EXTRA)
    ========================= */
 @layer utilities {
-  /* Soft fade/slide animation helpers for your modes */
   .animate-in {
     opacity: 0;
     transform: translateY(6px);
